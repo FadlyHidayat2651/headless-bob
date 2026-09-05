@@ -1,12 +1,16 @@
-import sys, os, json, subprocess, re
+import sys, os, json, subprocess, re, time
+import urllib.request as ur
 sys.path.insert(0, '/data/pylibs')
 from flask import Flask, jsonify, request, Response, stream_with_context
 from datetime import datetime
 import markdown as md_lib
 
 app = Flask(__name__)
-COMPANY = '/data/company'
-HARNESS = 'http://localhost:44285'
+COMPANY   = '/data/company'
+HARNESS   = 'http://localhost:44285'
+MODES_YAML = '/home/itzuser/.bob/settings/custom_modes.yaml'
+
+# ── Helpers ───────────────────────────────────────────────────────────────────
 
 def read_file(path):
     try: return open(path).read()
@@ -22,74 +26,162 @@ def svc_status(name):
         return r.stdout.strip()
     except: return 'unknown'
 
+def load_agent_descriptions():
+    """Read roleDefinition first-line for each agent from custom_modes.yaml."""
+    defaults = {
+        'intel-agent': 'Live web research & competitor intelligence',
+        'ops-agent':   'Infrastructure health & self-healing',
+        'dev-agent':   'Software engineering & deployment',
+        'ceo-agent':   'Executive orchestrator of multi-agent AI company',
+    }
+    try:
+        import yaml
+        with open(MODES_YAML) as f:
+            data = yaml.safe_load(f)
+        for m in data.get('customModes', []):
+            slug = m.get('slug', '')
+            if slug in defaults:
+                role = m.get('roleDefinition', '')
+                # Take first non-empty line, strip "You are the X Agent — " prefix
+                first = next((l.strip() for l in role.split('\n') if l.strip()), '')
+                # Remove "You are the X Agent — " or "You are the X Agent. "
+                first = re.sub(r'^You are the \w+ Agent[\s—–\-\.]+', '', first, flags=re.I).strip()
+                if first:
+                    defaults[slug] = first
+    except Exception:
+        pass
+    return defaults
+
+AGENT_DESCS = load_agent_descriptions()
+
 def extract_reply(raw):
-    lines = raw.split('\n')
+    """
+    Bob output has lines padded to 120 chars, sections separated by ─────.
+    Extract everything after the LAST 'Assistant (N)' header until
+    'Task Summary' or a ─────── line.
+    Strip the 120-char right-padding Bob adds to every line.
+    """
+    # Strip 120-char padding: trailing spaces Bob adds
+    lines = [l.rstrip() for l in raw.split('\n')]
+
     last = -1
     for i, l in enumerate(lines):
-        if re.search(r'Assistant\s*\(\d+\)', l): last = i
+        if re.search(r'Assistant\s*\(\d+\)', l):
+            last = i
+
     if last >= 0:
         out = []
-        for j in range(last+1, len(lines)):
-            if 'Task Summary' in lines[j]: break
-            if lines[j].strip().startswith('─'*5): break
-            out.append(lines[j].rstrip())
-        return '\n'.join(out).strip()
-    return raw.replace('Task Summary', '').strip()[:2000]
+        for j in range(last + 1, len(lines)):
+            if 'Task Summary' in lines[j]:
+                break
+            if re.match(r'^[─\-]{5,}', lines[j].strip()):
+                break
+            out.append(lines[j])
+        reply = '\n'.join(out).strip()
+        if reply:
+            return reply
 
-def invoke_bob(prompt, mode):
-    import urllib.request
-    data = json.dumps({'prompt': prompt, 'mode': mode}).encode()
-    req = urllib.request.Request(HARNESS+'/invoke', data=data,
-                                  headers={'Content-Type':'application/json'}, method='POST')
-    with urllib.request.urlopen(req, timeout=120) as r:
-        d = json.loads(r.read())
-        return extract_reply(d.get('output',''))
+    # Fallback: strip known Bob chrome and return everything
+    cleaned = re.sub(r'Task Summary.*', '', raw, flags=re.DOTALL)
+    cleaned = re.sub(r'^[─\-]{5,}.*$', '', cleaned, flags=re.MULTILINE)
+    cleaned = re.sub(r'Assistant\s*\(\d+\).*?\n', '', cleaned)
+    return cleaned.strip()
 
 def start_job(prompt, mode):
-    import urllib.request
     data = json.dumps({'prompt': prompt, 'mode': mode}).encode()
-    req = urllib.request.Request(HARNESS+'/jobs', data=data,
-                                  headers={'Content-Type':'application/json'}, method='POST')
-    with urllib.request.urlopen(req, timeout=10) as r:
+    req = ur.Request(HARNESS + '/jobs', data=data,
+                     headers={'Content-Type': 'application/json'}, method='POST')
+    with ur.urlopen(req, timeout=10) as r:
         return json.loads(r.read())
 
-def poll_job(job_id, timeout=120):
-    import urllib.request, time
-    for _ in range(timeout//3):
+def poll_job(job_id, timeout=180):
+    """Poll /jobs/{id} until done. Returns (status, output)."""
+    for _ in range(timeout // 3):
         time.sleep(3)
-        with urllib.request.urlopen(f'{HARNESS}/jobs/{job_id}', timeout=5) as r:
+        with ur.urlopen(f'{HARNESS}/jobs/{job_id}', timeout=5) as r:
             d = json.loads(r.read())
-            if d.get('status') in ('completed','failed','timeout'):
-                return d
-    return {'status':'timeout','output':''}
+        if d.get('status') in ('completed', 'failed', 'timeout'):
+            return d.get('status'), extract_reply(d.get('output', ''))
+    return 'timeout', ''
+
+def run_agent_with_retry(prompt, mode, max_retries=2):
+    """
+    Loop-engineering: run agent, if output is empty or status is failed,
+    push back to the SAME agent with the error context so it can self-resolve.
+    Returns (final_output, attempts, recovered).
+    """
+    attempts = 0
+    last_error = None
+
+    for attempt in range(max_retries + 1):
+        attempts += 1
+
+        if attempt > 0:
+            # Build self-healing retry prompt
+            retry_prompt = (
+                f"SELF-HEALING RETRY (attempt {attempt + 1}):\n\n"
+                f"Your previous run encountered this issue:\n{last_error}\n\n"
+                f"Original task:\n{prompt}\n\n"
+                f"Please analyse the error above, resolve it autonomously, "
+                f"and complete the original task successfully."
+            )
+            job = start_job(retry_prompt, mode)
+        else:
+            job = start_job(prompt, mode)
+
+        job_id = job.get('id')
+        if not job_id:
+            last_error = 'No job ID returned from Harness'
+            continue
+
+        status, output = poll_job(job_id)
+
+        if status == 'completed' and output.strip():
+            return output, attempts, attempt > 0
+
+        # Capture error for next retry
+        if not output.strip():
+            last_error = f"Agent returned empty output (status={status})"
+        else:
+            last_error = f"Status={status}. Agent output:\n{output[:500]}"
+
+    # All retries exhausted — return whatever we have
+    return output or f'[Agent did not produce output after {attempts} attempts]', attempts, False
+
+def invoke_bob_via_job(prompt, mode, timeout=300):
+    """Synchronous wrapper: start job, poll, return extracted reply."""
+    job = start_job(prompt, mode)
+    job_id = job.get('id')
+    if not job_id:
+        raise RuntimeError('Harness did not return job ID')
+    _, output = poll_job(job_id, timeout=timeout)
+    return output
+
+# ── API routes ────────────────────────────────────────────────────────────────
 
 @app.route('/api/state')
 def state():
-    import urllib.request
     try:
-        with urllib.request.urlopen(f'{HARNESS}/jobs', timeout=3) as r:
+        with ur.urlopen(f'{HARNESS}/jobs', timeout=3) as r:
             raw = json.loads(r.read())
             jobs = raw.get('runs', raw) if isinstance(raw, dict) else raw
             total_jobs = len(jobs) if isinstance(jobs, list) else 0
-            # count jobs per agent mode
             agent_jobs = {}
             for j in (jobs if isinstance(jobs, list) else []):
-                m = j.get('mode','unknown')
+                m = j.get('mode', 'unknown')
                 agent_jobs[m] = agent_jobs.get(m, 0) + 1
-    except: total_jobs = 0; agent_jobs = {}
+    except:
+        total_jobs = 0; agent_jobs = {}
 
     agents = [
         {'id':'intel','name':'Intel Agent','icon':'🔍','color':'#42be65','mode':'intel-agent',
          'tools':['firecrawl_scrape','firecrawl_search','write_file'],
-         'specialty':'Live web research & competitor intelligence',
          'report': f'{COMPANY}/intel-report.md'},
-        {'id':'ops','name':'Ops Agent','icon':'⚙️','color':'#f1c21b','mode':'ops-agent',
+        {'id':'ops',  'name':'Ops Agent',  'icon':'⚙️', 'color':'#f1c21b','mode':'ops-agent',
          'tools':['execute_command','write_file'],
-         'specialty':'Infrastructure health & self-healing',
          'report': f'{COMPANY}/ops-health.md'},
-        {'id':'dev','name':'Dev Agent','icon':'💻','color':'#be95ff','mode':'dev-agent',
+        {'id':'dev',  'name':'Dev Agent',  'icon':'💻', 'color':'#be95ff','mode':'dev-agent',
          'tools':['write_file','execute_command','read_file'],
-         'specialty':'Software engineering & deployment',
          'report': f'{COMPANY}/dev-status.md'},
     ]
     result = []
@@ -97,6 +189,7 @@ def state():
         content = read_file(a['report']) or ''
         result.append({
             **a,
+            'specialty': AGENT_DESCS.get(a['mode'], a['mode']),
             'last_run': file_mtime(a['report']),
             'status': 'active' if len(content) > 100 else 'idle',
             'preview': content[:180].strip(),
@@ -111,14 +204,15 @@ def state():
             'report': board,
             'report_html': md_lib.markdown(board, extensions=['tables']) if board else '',
             'jobs_run': agent_jobs.get('ceo-agent', 0),
+            'description': AGENT_DESCS.get('ceo-agent', ''),
         },
         'meta': {
             'timestamp': datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC'),
             'total_jobs': total_jobs,
             'alerts': alerts_raw.count('⚠️'),
             'services': {
-                'bob': svc_status('bob'),
-                'bob-harness': svc_status('bob-harness'),
+                'bob':          svc_status('bob'),
+                'bob-harness':  svc_status('bob-harness'),
                 'bob-terminal': svc_status('bob-terminal'),
             }
         }
@@ -126,31 +220,37 @@ def state():
 
 @app.route('/api/report/<agent_id>')
 def report(agent_id):
-    files = {'intel':f'{COMPANY}/intel-report.md','ops':f'{COMPANY}/ops-health.md',
-             'dev':f'{COMPANY}/dev-status.md','ceo':f'{COMPANY}/board-report.md'}
+    files = {
+        'intel': f'{COMPANY}/intel-report.md',
+        'ops':   f'{COMPANY}/ops-health.md',
+        'dev':   f'{COMPANY}/dev-status.md',
+        'ceo':   f'{COMPANY}/board-report.md',
+    }
     f = files.get(agent_id)
-    if not f: return jsonify({'error':'unknown'}), 404
+    if not f: return jsonify({'error': 'unknown'}), 404
     content = read_file(f) or '*(no report yet)*'
-    return jsonify({'raw':content,'html':md_lib.markdown(content,extensions=['tables']),
-                    'last_updated':file_mtime(f)})
+    return jsonify({
+        'raw': content,
+        'html': md_lib.markdown(content, extensions=['tables']),
+        'last_updated': file_mtime(f),
+    })
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
-    body = request.get_json()
-    message = body.get('prompt','')
+    body    = request.get_json()
+    message = body.get('message') or body.get('prompt', '')
 
     def generate():
-        import time, urllib.request
-        def send(t, d): return f"data: {json.dumps({'type':t,'content':d})}\n\n"
+        def send(t, d): return f"data: {json.dumps({'type': t, 'content': d})}\n\n"
 
         msg_lower = message.lower()
         needs_intel = any(w in msg_lower for w in [
-            'market','kompetitor','competitor','pasar','industri','industry','telkom',
+            'market','kompetitor','competitor','pasar','industri','industry',
             'pricing','trend','berita','news','internet','web','search','cari','riset',
             'latest','terbaru','scrape','harga','saham','stock'])
         needs_ops = any(w in msg_lower for w in [
             'server','disk','cpu','ram','memory','service','health','infra',
-            'sistem','system','uptime','error','alert','storage','log'])
+            'sistem','system','uptime','error','alert','storage','log','kondisi'])
         needs_dev = any(w in msg_lower for w in [
             'code','deploy','build','ship','feature','bug','engineering',
             'dev','app','api','website','script','program'])
@@ -158,87 +258,168 @@ def chat():
         try:
             intel_out = ops_out = dev_out = None
 
+            # ── Intel Agent ──────────────────────────────────────────────────
             if needs_intel:
                 yield send('thinking', {'agent':'ceo','text':'Analyzing request — routing to Intel Agent for live web research...'})
                 yield send('delegate', {'from':'ceo','to':'intel','reason':'Live market data required'})
-                time.sleep(0.5)
+                time.sleep(0.4)
                 yield send('agent_start', {'agent':'intel','task': f'Research: {message[:80]}'})
-                job = start_job(f"Use firecrawl_scrape or firecrawl_search to research: {message}. Get LIVE data from the internet.", 'intel-agent')
+                job = start_job(
+                    f"Use firecrawl_scrape or firecrawl_search to research: {message}. Get LIVE data from the internet.",
+                    'intel-agent')
                 job_id = job.get('id')
                 yield send('job_started', {'agent':'intel','job_id':job_id})
-                # poll with progress
-                import urllib.request as ur
-                for tick in range(40):
-                    time.sleep(4)
+
+                last_error = None
+                for tick in range(60):  # up to 3 min
+                    time.sleep(3)
                     with ur.urlopen(f'{HARNESS}/jobs/{job_id}', timeout=5) as r:
                         d = json.loads(r.read())
-                    if d.get('status') in ('completed','failed','timeout'):
-                        intel_out = extract_reply(d.get('output',''))
+                    status = d.get('status')
+                    if status in ('completed', 'failed', 'timeout'):
+                        intel_out = extract_reply(d.get('output', ''))
+                        # ── Loop engineering: retry if empty ─────────────────
+                        if not intel_out.strip() and status != 'timeout':
+                            last_error = f"Status={status}, output empty"
+                            yield send('loop_retry', {'agent':'intel','attempt':1,'reason':last_error})
+                            yield send('agent_start', {'agent':'intel','task':'Self-healing retry...'})
+                            retry_prompt = (
+                                f"SELF-HEALING RETRY:\nYour previous run produced no output (status={status}).\n"
+                                f"Original task: research: {message}\n"
+                                f"Please retry and ensure you produce a complete response."
+                            )
+                            rjob = start_job(retry_prompt, 'intel-agent')
+                            rjob_id = rjob.get('id')
+                            for rtick in range(40):
+                                time.sleep(3)
+                                with ur.urlopen(f'{HARNESS}/jobs/{rjob_id}', timeout=5) as r2:
+                                    rd = json.loads(r2.read())
+                                if rd.get('status') in ('completed','failed','timeout'):
+                                    intel_out = extract_reply(rd.get('output',''))
+                                    break
+                                yield send('agent_progress', {'agent':'intel','elapsed':(rtick+1)*3,'retrying':True})
                         break
-                    yield send('agent_progress', {'agent':'intel','elapsed': (tick+1)*4})
-                yield send('agent_done', {'agent':'intel','preview': (intel_out or '')[:100]})
+                    yield send('agent_progress', {'agent':'intel','elapsed':(tick+1)*3})
 
+                yield send('agent_done', {'agent':'intel','preview':(intel_out or '')[:120]})
+
+            # ── Ops Agent ────────────────────────────────────────────────────
             if needs_ops:
                 yield send('thinking', {'agent':'ceo','text':'Routing to Ops Agent for infrastructure check...'})
                 yield send('delegate', {'from':'ceo','to':'ops','reason':'System state required'})
-                time.sleep(0.5)
+                time.sleep(0.4)
                 yield send('agent_start', {'agent':'ops','task':'Infrastructure health check'})
-                job = start_job(f"Check system health for this request: {message}. Run actual commands.", 'ops-agent')
+                job = start_job(
+                    f"Check system health for this request: {message}. Run actual shell commands (df, free, systemctl, ss).",
+                    'ops-agent')
                 job_id = job.get('id')
-                for tick in range(25):
-                    time.sleep(4)
+                yield send('job_started', {'agent':'ops','job_id':job_id})
+
+                for tick in range(40):  # up to 2 min
+                    time.sleep(3)
                     with ur.urlopen(f'{HARNESS}/jobs/{job_id}', timeout=5) as r:
                         d = json.loads(r.read())
-                    if d.get('status') in ('completed','failed','timeout'):
-                        ops_out = extract_reply(d.get('output',''))
+                    status = d.get('status')
+                    if status in ('completed', 'failed', 'timeout'):
+                        ops_out = extract_reply(d.get('output', ''))
+                        # ── Loop engineering: retry on failure ────────────────
+                        if (not ops_out.strip() or status == 'failed') and status != 'timeout':
+                            raw_output = d.get('output','')
+                            yield send('loop_retry', {'agent':'ops','attempt':1,'reason':f'status={status}'})
+                            yield send('agent_start', {'agent':'ops','task':'Self-healing: resolving error...'})
+                            retry_prompt = (
+                                f"SELF-HEALING RETRY:\nYour previous run failed (status={status}).\n"
+                                f"Error context:\n{raw_output[:400]}\n\n"
+                                f"Original task: {message}\n\n"
+                                f"Analyse the error, resolve it, and complete the task."
+                            )
+                            rjob = start_job(retry_prompt, 'ops-agent')
+                            rjob_id = rjob.get('id')
+                            for rtick in range(30):
+                                time.sleep(3)
+                                with ur.urlopen(f'{HARNESS}/jobs/{rjob_id}', timeout=5) as r2:
+                                    rd = json.loads(r2.read())
+                                if rd.get('status') in ('completed','failed','timeout'):
+                                    ops_out = extract_reply(rd.get('output',''))
+                                    break
+                                yield send('agent_progress', {'agent':'ops','elapsed':(rtick+1)*3,'retrying':True})
                         break
-                    yield send('agent_progress', {'agent':'ops','elapsed':(tick+1)*4})
-                yield send('agent_done', {'agent':'ops','preview':(ops_out or '')[:100]})
+                    yield send('agent_progress', {'agent':'ops','elapsed':(tick+1)*3})
 
+                yield send('agent_done', {'agent':'ops','preview':(ops_out or '')[:120]})
+
+            # ── Dev Agent ────────────────────────────────────────────────────
             if needs_dev:
                 yield send('thinking', {'agent':'ceo','text':'Routing to Dev Agent for engineering task...'})
                 yield send('delegate', {'from':'ceo','to':'dev','reason':'Software development required'})
-                time.sleep(0.5)
+                time.sleep(0.4)
                 yield send('agent_start', {'agent':'dev','task':message[:80]})
                 job = start_job(message, 'dev-agent')
                 job_id = job.get('id')
-                for tick in range(40):
-                    time.sleep(4)
+                yield send('job_started', {'agent':'dev','job_id':job_id})
+
+                for tick in range(60):
+                    time.sleep(3)
                     with ur.urlopen(f'{HARNESS}/jobs/{job_id}', timeout=5) as r:
                         d = json.loads(r.read())
-                    if d.get('status') in ('completed','failed','timeout'):
-                        dev_out = extract_reply(d.get('output',''))
+                    status = d.get('status')
+                    if status in ('completed', 'failed', 'timeout'):
+                        dev_out = extract_reply(d.get('output', ''))
+                        # ── Loop engineering: retry on failure ────────────────
+                        if (not dev_out.strip() or status == 'failed') and status != 'timeout':
+                            raw_output = d.get('output','')
+                            yield send('loop_retry', {'agent':'dev','attempt':1,'reason':f'status={status}'})
+                            yield send('agent_start', {'agent':'dev','task':'Self-healing: resolving error...'})
+                            retry_prompt = (
+                                f"SELF-HEALING RETRY:\nYour previous run failed (status={status}).\n"
+                                f"Error context:\n{raw_output[:400]}\n\n"
+                                f"Original task: {message}\n\n"
+                                f"Analyse the error, resolve it, and complete the task."
+                            )
+                            rjob = start_job(retry_prompt, 'dev-agent')
+                            rjob_id = rjob.get('id')
+                            for rtick in range(40):
+                                time.sleep(3)
+                                with ur.urlopen(f'{HARNESS}/jobs/{rjob_id}', timeout=5) as r2:
+                                    rd = json.loads(r2.read())
+                                if rd.get('status') in ('completed','failed','timeout'):
+                                    dev_out = extract_reply(rd.get('output',''))
+                                    break
+                                yield send('agent_progress', {'agent':'dev','elapsed':(rtick+1)*3,'retrying':True})
                         break
-                    yield send('agent_progress', {'agent':'dev','elapsed':(tick+1)*4})
-                yield send('agent_done', {'agent':'dev','preview':(dev_out or '')[:100]})
+                    yield send('agent_progress', {'agent':'dev','elapsed':(tick+1)*3})
 
-            # CEO synthesizes
+                yield send('agent_done', {'agent':'dev','preview':(dev_out or '')[:120]})
+
+            # ── CEO Synthesis ─────────────────────────────────────────────────
             yield send('thinking', {'agent':'ceo','text':'All sub-agents reported back. Synthesizing executive response...'})
             yield send('delegate', {'from':None,'to':'ceo','reason':'Synthesis'})
 
             parts = [f"Question: {message}"]
-            if intel_out: parts.append(f"Intel Agent findings:\n{intel_out[:1000]}")
-            if ops_out:   parts.append(f"Ops Agent report:\n{ops_out[:600]}")
-            if dev_out:   parts.append(f"Dev Agent output:\n{dev_out[:600]}")
+            if intel_out: parts.append(f"Intel Agent findings:\n{intel_out[:2000]}")
+            if ops_out:   parts.append(f"Ops Agent report:\n{ops_out[:1500]}")
+            if dev_out:   parts.append(f"Dev Agent output:\n{dev_out[:1500]}")
             if not any([intel_out, ops_out, dev_out]):
-                # Simple Q — read reports directly
+                # No agents delegated — read cached reports directly
                 for fname, label in [
-                    (f'{COMPANY}/board-report.md','Board Report'),
-                    (f'{COMPANY}/intel-report.md','Intel Report'),
-                    (f'{COMPANY}/ops-health.md','Ops Health'),
+                    (f'{COMPANY}/board-report.md', 'Board Report'),
+                    (f'{COMPANY}/intel-report.md', 'Intel Report'),
+                    (f'{COMPANY}/ops-health.md',   'Ops Health'),
                 ]:
                     content = read_file(fname)
-                    if content: parts.append(f"{label}:\n{content[:500]}")
+                    if content: parts.append(f"{label}:\n{content[:800]}")
 
             ceo_prompt = (
                 "You are the CEO Agent. Synthesize the following sub-agent results into a sharp, "
-                "data-driven executive answer. Use markdown. Be concise but specific.\n\n" +
-                "\n\n".join(parts)
+                "data-driven executive answer. Use markdown. Be concise but specific. "
+                "Do NOT truncate — provide the complete answer.\n\n"
+                + "\n\n".join(parts)
             )
-            ceo_out = invoke_bob(ceo_prompt, 'ceo-agent')
+            ceo_out = invoke_bob_via_job(ceo_prompt, 'ceo-agent', timeout=300)
             yield send('reply', ceo_out)
 
         except Exception as e:
+            import traceback
             yield send('error', str(e))
 
     return Response(stream_with_context(generate()), mimetype='text/event-stream',
@@ -246,7 +427,7 @@ def chat():
 
 @app.route('/')
 def index():
-    base = request.args.get('base','')
+    base = request.args.get('base', '')
     return HTML.replace("const API_BASE = '';", f"const API_BASE = '{base}';")
 
 # ── HTML ──────────────────────────────────────────────────────────────────────
@@ -325,6 +506,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14
 .flow-node.active.dev{border-color:var(--purple);background:rgba(188,140,255,.08);box-shadow:0 0 16px rgba(188,140,255,.2)}
 .flow-node.active.ceo{border-color:var(--blue);background:rgba(69,137,255,.08)}
 .flow-node.done{border-color:var(--green);opacity:.7}
+.flow-node.retrying{border-color:var(--yellow)!important;background:rgba(210,153,34,.1)!important;animation:retryPulse .6s infinite}
+@keyframes retryPulse{0%,100%{box-shadow:0 0 0 transparent}50%{box-shadow:0 0 12px rgba(210,153,34,.5)}}
 .flow-icon{font-size:22px}
 .flow-name{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
 .flow-task{font-size:9px;color:var(--dim);text-align:center;max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -406,7 +589,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14
 .msg.system{align-self:center;align-items:center;max-width:100%}
 .bubble{padding:9px 13px;border-radius:10px;font-size:13px;line-height:1.55}
 .msg.user .bubble{background:var(--ibm);color:#fff;border-radius:10px 10px 2px 10px}
-.msg.ceo .bubble{background:var(--s2);border:1px solid var(--s3);border-radius:10px 10px 10px 2px}
+.msg.ceo .bubble{background:var(--s2);border:1px solid var(--s3);border-radius:10px 10px 10px 2px;max-width:100%}
 .msg.ceo .bubble h1,.msg.ceo .bubble h2,.msg.ceo .bubble h3{font-size:12px;font-weight:600;color:#a6c8ff;margin:6px 0 3px}
 .msg.ceo .bubble p{margin:3px 0;color:#c6c6c6}
 .msg.ceo .bubble ul,.msg.ceo .bubble ol{padding-left:14px;margin:4px 0}
@@ -424,6 +607,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14
 .del-arr{color:var(--blue);font-size:13px;font-weight:700}
 .del-status{font-size:10px;color:var(--dim);font-family:var(--mono)}
 .del-status.live{color:var(--blue);animation:blink 1.2s infinite}
+.del-retry{font-size:10px;color:var(--yellow);font-family:var(--mono);margin-top:4px}
 /* input */
 .chat-inp-wrap{padding:10px;border-top:1px solid var(--s3);display:flex;gap:8px;flex-shrink:0}
 .chat-inp{flex:1;background:rgba(0,0,0,.4);border:1px solid var(--s3);color:var(--text);font-family:var(--sans);font-size:13px;padding:8px 12px;border-radius:6px;outline:none;resize:none;height:38px;min-height:38px;overflow:hidden}
@@ -464,7 +648,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14
           <div class="ceo-avatar">👔</div>
           <div class="ceo-meta">
             <div class="ceo-name">CEO Agent</div>
-            <div class="ceo-desc">Executive Orchestrator · Delegates to specialized sub-agents · Synthesizes board-level answers</div>
+            <div class="ceo-desc" id="ceoDesc">Loading...</div>
           </div>
           <div style="text-align:right;flex-shrink:0">
             <div style="font-size:10px;color:var(--muted);margin-bottom:3px">Last report</div>
@@ -523,7 +707,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14
       <div class="chat-top-bar"></div>
       <div class="chat-header">
         <div class="chat-av">👔</div>
-        <div><div class="chat-n">CEO Agent</div><div class="chat-s">Ask anything — I'll delegate to the right agent</div></div>
+        <div><div class="chat-n">CEO Agent</div><div class="chat-s" id="chatSubtitle">Ask anything — I'll delegate to the right agent</div></div>
         <div class="chat-thinking" id="cThink"><div class="td"></div><div class="td"></div><div class="td"></div><span style="margin-left:4px;font-size:11px">Working…</span></div>
       </div>
       <div class="chat-sugs" id="chatSugs"></div>
@@ -582,6 +766,9 @@ function renderState(d){
   // CEO
   document.getElementById('ceoLastRun').textContent=d.ceo.last_run;
   document.getElementById('ceoReport').innerHTML=d.ceo.report_html||'<em style="color:var(--muted)">No board report yet</em>';
+  if(d.ceo.description){
+    document.getElementById('ceoDesc').textContent=d.ceo.description;
+  }
   document.getElementById('sJobs').textContent=d.meta.total_jobs;
   document.getElementById('sAlerts').textContent=d.meta.alerts;
   const svcsUp=Object.values(d.meta.services).filter(s=>s==='active').length;
@@ -590,24 +777,25 @@ function renderState(d){
   renderAgents(d.agents);
   // Services
   document.getElementById('svcRow').innerHTML=Object.entries(d.meta.services).map(([n,s])=>
-    `<div class="svc"><div class="svc-dot ${s==='active'?'active':'inactive'}"></div><span class="svc-name">${n}</span><span class="svc-s">${s}</span></div>`
+    '<div class="svc"><div class="svc-dot '+(s==='active'?'active':'inactive')+'"></div><span class="svc-name">'+n+'</span><span class="svc-s">'+s+'</span></div>'
   ).join('');
 }
 
 function renderAgents(agents){
-  document.getElementById('agentGrid').innerHTML=agents.map(a=>`
-    <div class="agent-card" id="ac-${a.id}" onclick="selAgent('${a.id}')">
-      <div class="ac-top">
-        <div class="ac-icon" style="background:${a.color}18;border-color:${a.color}44">${a.icon}</div>
-        <div><div class="ac-name">${a.name}</div><div class="ac-role">${a.specialty}</div></div>
-      </div>
-      <div class="ac-body">
-        <div class="ac-row"><span class="ac-label">Status</span><span class="pill ${a.status==='active'?'pill-green':'pill-idle'}">${a.status==='active'?'● Active':'○ Idle'}</span></div>
-        <div class="ac-row"><span class="ac-label">Last run</span><span style="font-size:10px;font-family:var(--mono);color:var(--dim)">${a.last_run}</span></div>
-        <div class="ac-tools">${a.tools.map(t=>`<span class="tool-tag">${t}</span>`).join('')}</div>
-        <div class="ac-preview">${esc(a.preview.split('\n')[0])}</div>
-      </div>
-    </div>`).join('');
+  document.getElementById('agentGrid').innerHTML=agents.map(a=>
+    '<div class="agent-card" id="ac-'+a.id+'" onclick="selAgent(\''+a.id+'\')">'+
+      '<div class="ac-top">'+
+        '<div class="ac-icon" style="background:'+a.color+'18;border-color:'+a.color+'44">'+a.icon+'</div>'+
+        '<div><div class="ac-name">'+a.name+'</div><div class="ac-role">'+esc(a.specialty)+'</div></div>'+
+      '</div>'+
+      '<div class="ac-body">'+
+        '<div class="ac-row"><span class="ac-label">Status</span><span class="pill '+(a.status==='active'?'pill-green':'pill-idle')+'">'+(a.status==='active'?'● Active':'○ Idle')+'</span></div>'+
+        '<div class="ac-row"><span class="ac-label">Last run</span><span style="font-size:10px;font-family:var(--mono);color:var(--dim)">'+a.last_run+'</span></div>'+
+        '<div class="ac-tools">'+a.tools.map(t=>'<span class="tool-tag">'+t+'</span>').join('')+'</div>'+
+        '<div class="ac-preview">'+esc(a.preview.split('\n')[0])+'</div>'+
+      '</div>'+
+    '</div>'
+  ).join('');
 }
 
 // ── Detail ──
@@ -643,36 +831,41 @@ function orchStart(activeAgents){
   const all=['ceo',...activeAgents];
   orchNodes={};
   let html='<div class="flow-active">';
-  all.forEach((id,i)=>{
+  all.forEach(function(id,i){
     const a=AGENTS[id]||{icon:'🤖',name:id,color:'#888',cls:id};
-    html+=`<div class="flow-node" id="fn-${id}" style="--color:${a.color}">
-      <span class="flow-icon">${a.icon}</span>
-      <span class="flow-name">${a.name.split(' ')[0]}</span>
-      <span class="flow-task" id="ft-${id}">standby</span>
-    </div>`;
-    if(i<all.length-1) html+=`<div class="flow-arrow" id="fa-${id}">→</div>`;
+    html+='<div class="flow-node" id="fn-'+id+'" style="--color:'+a.color+'">';
+    html+='<span class="flow-icon">'+a.icon+'</span>';
+    html+='<span class="flow-name">'+a.name.split(' ')[0]+'</span>';
+    html+='<span class="flow-task" id="ft-'+id+'">standby</span>';
+    html+='</div>';
+    if(i<all.length-1) html+='<div class="flow-arrow" id="fa-'+id+'">→</div>';
   });
   html+='</div>';
   body.innerHTML=html;
-  orchNodes=Object.fromEntries(all.map(id=>[id,true]));
+  orchNodes=Object.fromEntries(all.map(function(id){return [id,true];}));
 }
 function orchActivate(agentId, taskText){
   const node=document.getElementById('fn-'+agentId);
   if(!node)return;
-  // deactivate all first
-  Object.keys(orchNodes).forEach(id=>{
+  Object.keys(orchNodes).forEach(function(id){
     const n=document.getElementById('fn-'+id);
     if(n) n.className='flow-node';
   });
-  node.className=`flow-node active ${agentId}`;
+  node.className='flow-node active '+agentId;
   const t=document.getElementById('ft-'+agentId);
   if(t) t.textContent=(taskText||'working...').slice(0,18);
-  // activate preceding arrow
-  const prevId=Object.keys(orchNodes)[Object.keys(orchNodes).indexOf(agentId)-1];
+  const keys=Object.keys(orchNodes);
+  const prevId=keys[keys.indexOf(agentId)-1];
   if(prevId){
     const arr=document.getElementById('fa-'+prevId);
     if(arr) arr.className='flow-arrow active';
   }
+}
+function orchRetrying(agentId){
+  const node=document.getElementById('fn-'+agentId);
+  if(node) node.className='flow-node retrying '+agentId;
+  const t=document.getElementById('ft-'+agentId);
+  if(t) t.textContent='retrying…';
 }
 function orchDone(agentId){
   const node=document.getElementById('fn-'+agentId);
@@ -688,7 +881,7 @@ function orchReset(){
 }
 function orchStatus(text){
   const el=document.getElementById('flowStatus');
-  el.innerHTML=`<span class="blink">▶</span> ${esc(text)}`;
+  el.innerHTML='<span class="blink">▶</span> '+esc(text);
 }
 function glowAgent(id, on){
   const card=document.getElementById('ac-'+id);
@@ -700,11 +893,11 @@ function glowAgent(id, on){
 
 // ── Suggestions ──
 function initSugs(){
-  document.getElementById('chatSugs').innerHTML=SUGS.map(s=>
-    `<button class="sug" onclick="fillChat('${s.replace(/'/g,"\\'")}')">${s}</button>`
-  ).join('');
-  appendMsg('ceo','Good morning. I\'m your CEO Agent — I coordinate Intel, Ops, and Dev agents to answer anything. Try a suggestion or ask your own question.',false);
-  document.getElementById('chatInp').addEventListener('keydown',e=>{
+  document.getElementById('chatSugs').innerHTML=SUGS.map(function(s){
+    return '<button class="sug" onclick="fillChat(\''+s.replace(/'/g,"\\'")+'\')">' + s + '</button>';
+  }).join('');
+  appendMsg('ceo',"Good morning. I'm your CEO Agent — I coordinate Intel, Ops, and Dev agents to answer anything. Try a suggestion or ask your own question.",false);
+  document.getElementById('chatInp').addEventListener('keydown',function(e){
     if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();doChat();}
   });
 }
@@ -712,7 +905,6 @@ function fillChat(t){document.getElementById('chatInp').value=t;doChat();}
 
 // ── Chat ──
 let delegationBubble=null;
-let delegationFlow=[];
 
 async function doChat(){
   const inp=document.getElementById('chatInp');
@@ -723,14 +915,13 @@ async function doChat(){
   const btn=document.getElementById('chatBtn');
   const think=document.getElementById('cThink');
   btn.disabled=true;think.classList.add('show');
-  delegationFlow=[];
   delegationBubble=null;
 
   try{
     const resp=await fetch(API_BASE+'/api/chat',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({prompt:msg})
+      body:JSON.stringify({message:msg})
     });
 
     const reader=resp.body.getReader();
@@ -764,39 +955,51 @@ function handleEvent(ev, seenAgents){
     const ag=ev.content.agent;
     updateDelegationBubble('thinking',ev.content.text);
     orchStatus(ev.content.text);
-    if(ag) orchActivate(ag, 'thinking...');
+    if(ag) orchActivate(ag,'thinking...');
 
   }else if(ev.type==='delegate'){
-    const {from,to,reason}=ev.content;
+    const to=ev.content.to;
+    const from=ev.content.from;
+    const reason=ev.content.reason;
     if(!seenAgents.includes(to)) seenAgents.push(to);
-    // Init visualizer on first delegate
     if(seenAgents.length===1||!delegationBubble){
-      const active=seenAgents.filter(a=>a!=='ceo');
+      const active=seenAgents.filter(function(a){return a!=='ceo';});
       orchStart(active.length>0?active:['ceo']);
       delegationBubble=createDelegationBubble(seenAgents);
     }
-    orchActivate(to, reason||'working...');
+    orchActivate(to,reason||'working...');
     if(to!=='ceo') glowAgent(to,true);
-    updateDelegationBubble('delegate',{from,to,reason});
-    orchStatus(`Delegating to ${AGENTS[to]?AGENTS[to].name:to}...`);
+    updateDelegationBubble('delegate',{from:from,to:to,reason:reason});
+    orchStatus('Delegating to '+(AGENTS[to]?AGENTS[to].name:to)+'...');
 
   }else if(ev.type==='agent_start'){
-    const{agent,task}=ev.content;
-    orchActivate(agent, task);
-    orchStatus(`${AGENTS[agent]?AGENTS[agent].name:agent}: ${task}`);
-    updateDelegationBubble('status',`${AGENTS[agent]?AGENTS[agent].icon:''} ${task}`);
+    const agent=ev.content.agent;
+    const task=ev.content.task;
+    orchActivate(agent,task);
+    orchStatus((AGENTS[agent]?AGENTS[agent].name:agent)+': '+task);
+    updateDelegationBubble('status',(AGENTS[agent]?AGENTS[agent].icon:'')+' '+task);
 
   }else if(ev.type==='agent_progress'){
-    const{agent,elapsed}=ev.content;
-    orchStatus(`${AGENTS[agent]?AGENTS[agent].name:agent} working… ${elapsed}s`);
-    updateDelegationBubble('status',`${AGENTS[agent]?AGENTS[agent].name:agent} working… ${elapsed}s`);
+    const agent=ev.content.agent;
+    const elapsed=ev.content.elapsed;
+    const retrying=ev.content.retrying;
+    orchStatus((AGENTS[agent]?AGENTS[agent].name:agent)+' working… '+elapsed+'s'+(retrying?' [retrying]':''));
+    updateDelegationBubble('status',(AGENTS[agent]?AGENTS[agent].name:agent)+' working… '+elapsed+'s');
+
+  }else if(ev.type==='loop_retry'){
+    const agent=ev.content.agent;
+    const attempt=ev.content.attempt;
+    const reason=ev.content.reason;
+    orchRetrying(agent);
+    orchStatus('⟳ Loop-engineering: pushing error back to '+(AGENTS[agent]?AGENTS[agent].name:agent)+' for self-resolution…');
+    updateDelegationBubble('retry','⟳ Retry '+attempt+': '+reason);
 
   }else if(ev.type==='agent_done'){
-    const{agent,preview}=ev.content;
+    const agent=ev.content.agent;
     orchDone(agent);
     glowAgent(agent,false);
     updateDelegationBubble('done',agent);
-    orchStatus(`${AGENTS[agent]?AGENTS[agent].name:agent} ✓ done`);
+    orchStatus((AGENTS[agent]?AGENTS[agent].name:agent)+' ✓ done');
 
   }else if(ev.type==='reply'){
     removeDelegationBubble();
@@ -804,7 +1007,7 @@ function handleEvent(ev, seenAgents){
     orchStatus('✓ Complete');
     setTimeout(orchReset,4000);
     appendMsg('ceo',ev.content,true);
-    seenAgents.forEach(a=>glowAgent(a,false));
+    seenAgents.forEach(function(a){glowAgent(a,false);});
     fetchState();
 
   }else if(ev.type==='error'){
@@ -819,21 +1022,19 @@ function createDelegationBubble(agents){
   const div=document.createElement('div');
   div.className='msg ceo';
   div.id='delBubble';
-  div.innerHTML=`<div class="bubble del-bubble">
-    <div class="del-flow" id="delFlow"></div>
-    <div class="del-status live" id="delStatus">Routing request…</div>
-  </div>`;
+  div.innerHTML='<div class="bubble del-bubble"><div class="del-flow" id="delFlow"></div><div class="del-status live" id="delStatus">Routing request…</div><div class="del-retry" id="delRetry"></div></div>';
   wrap.appendChild(div);wrap.scrollTop=9e9;
   return div;
 }
 function updateDelegationBubble(type, data){
   const flowEl=document.getElementById('delFlow');
   const statusEl=document.getElementById('delStatus');
+  const retryEl=document.getElementById('delRetry');
   if(!flowEl)return;
   if(type==='delegate'){
-    const{from,to}=data;
+    const to=data.to;
     const aTo=AGENTS[to]||{icon:'🤖',name:to,color:'#888'};
-    const exists=flowEl.querySelector(`[data-id="${to}"]`);
+    const exists=flowEl.querySelector('[data-id="'+to+'"]');
     if(!exists){
       if(flowEl.children.length>0){
         const arr=document.createElement('span');
@@ -848,8 +1049,10 @@ function updateDelegationBubble(type, data){
     }
   }else if(type==='status'||type==='thinking'){
     if(statusEl){statusEl.textContent=typeof data==='string'?data:'';}
+  }else if(type==='retry'){
+    if(retryEl){retryEl.textContent=typeof data==='string'?data:'';}
   }else if(type==='done'){
-    const node=flowEl.querySelector(`[data-id="${data}"]`);
+    const node=flowEl.querySelector('[data-id="'+data+'"]');
     if(node){node.style.borderColor='var(--green)';node.style.color='var(--green)';}
   }
   const wrap=document.getElementById('chatMsgs');if(wrap)wrap.scrollTop=9e9;
@@ -867,16 +1070,18 @@ function appendMsg(role,text,isMd){
   const t=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
   const div=document.createElement('div');
   div.className='msg '+role;
-  div.innerHTML=`<div class="bubble">${isMd?md(text):`<p style="white-space:pre-wrap">${esc(text)}</p>`}</div><div class="msg-t">${t}</div>`;
+  div.innerHTML='<div class="bubble">'+(isMd?md(text):'<p style="white-space:pre-wrap">'+esc(text)+'</p>')+'</div><div class="msg-t">'+t+'</div>';
   wrap.appendChild(div);wrap.scrollTop=9e9;
 }
 function md(t){
   return esc(t)
-    .replace(/```[\s\S]*?```/g,m=>`<code>${m.slice(3,-3).replace(/^[a-z]+\n/,'')}</code>`)
+    .replace(/```[\s\S]*?```/g,function(m){return '<pre style="background:rgba(0,0,0,.4);padding:8px;border-radius:4px;overflow-x:auto;margin:4px 0;font-family:var(--mono);font-size:11px;color:#a8c7fa">'+m.slice(3,-3).replace(/^[a-z]+\n/,'')+'</pre>';})
     .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
-    .replace(/^#{1,3} (.+)$/gm,'<h3>$1</h3>')
+    .replace(/^### (.+)$/gm,'<h3 style="font-size:12px;font-weight:600;color:#a6c8ff;margin:8px 0 4px">$1</h3>')
+    .replace(/^## (.+)$/gm,'<h2 style="font-size:13px;font-weight:600;color:#a6c8ff;margin:10px 0 5px">$1</h2>')
+    .replace(/^# (.+)$/gm,'<h1 style="font-size:14px;font-weight:700;color:#a6c8ff;margin:10px 0 5px">$1</h1>')
     .replace(/^- (.+)$/gm,'<li>$1</li>')
-    .replace(/(<li>.*<\/li>\n?)+/g,m=>`<ul>${m}</ul>`)
+    .replace(/(<li>.*<\/li>\n?)+/g,function(m){return '<ul style="padding-left:14px;margin:4px 0">'+m+'</ul>';})
     .replace(/\n{2,}/g,'<br><br>')
     .replace(/\n/g,'<br>');
 }
