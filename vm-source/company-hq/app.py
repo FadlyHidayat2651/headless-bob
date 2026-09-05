@@ -27,12 +27,12 @@ def svc_status(name):
     except: return 'unknown'
 
 def load_agent_descriptions():
-    """Read roleDefinition first-line for each agent from custom_modes.yaml."""
+    """Read whenToUse field for each agent from custom_modes.yaml."""
     defaults = {
         'intel-agent': 'Live web research & competitor intelligence',
         'ops-agent':   'Infrastructure health & self-healing',
         'dev-agent':   'Software engineering & deployment',
-        'ceo-agent':   'Executive orchestrator of multi-agent AI company',
+        'ceo-agent':   'Executive orchestrator · routes to sub-agents · synthesizes results',
     }
     try:
         import yaml
@@ -41,13 +41,11 @@ def load_agent_descriptions():
         for m in data.get('customModes', []):
             slug = m.get('slug', '')
             if slug in defaults:
-                role = m.get('roleDefinition', '')
-                # Take first non-empty line, strip "You are the X Agent — " prefix
-                first = next((l.strip() for l in role.split('\n') if l.strip()), '')
-                # Remove "You are the X Agent — " or "You are the X Agent. "
-                first = re.sub(r'^You are the \w+ Agent[\s—–\-\.]+', '', first, flags=re.I).strip()
-                if first:
-                    defaults[slug] = first
+                # Prefer whenToUse (short, user-facing), fall back to description
+                text = m.get('whenToUse') or m.get('description') or ''
+                text = text.strip()
+                if text:
+                    defaults[slug] = text
     except Exception:
         pass
     return defaults
@@ -56,12 +54,11 @@ AGENT_DESCS = load_agent_descriptions()
 
 def extract_reply(raw):
     """
-    Bob output has lines padded to 120 chars, sections separated by ─────.
-    Extract everything after the LAST 'Assistant (N)' header until
-    'Task Summary' or a ─────── line.
-    Strip the 120-char right-padding Bob adds to every line.
+    Bob output has lines padded to 120 chars.
+    Section separators use U+2500 BOX DRAWING LIGHT HORIZONTAL (─), NOT ASCII hyphen (-).
+    We ONLY break on ─────, never on markdown --- which appears inside content.
     """
-    # Strip 120-char padding: trailing spaces Bob adds
+    # Strip 120-char right-padding Bob adds to every line
     lines = [l.rstrip() for l in raw.split('\n')]
 
     last = -1
@@ -74,17 +71,19 @@ def extract_reply(raw):
         for j in range(last + 1, len(lines)):
             if 'Task Summary' in lines[j]:
                 break
-            if re.match(r'^[─\-]{5,}', lines[j].strip()):
+            # Only stop on Bob's box-drawing separator (U+2500 ─), NOT on markdown ---
+            stripped = lines[j].strip()
+            if stripped and all(c == '─' for c in stripped) and len(stripped) >= 5:
                 break
             out.append(lines[j])
         reply = '\n'.join(out).strip()
         if reply:
             return reply
 
-    # Fallback: strip known Bob chrome and return everything
-    cleaned = re.sub(r'Task Summary.*', '', raw, flags=re.DOTALL)
-    cleaned = re.sub(r'^[─\-]{5,}.*$', '', cleaned, flags=re.MULTILINE)
-    cleaned = re.sub(r'Assistant\s*\(\d+\).*?\n', '', cleaned)
+    # Fallback: strip only Bob chrome (─── separators and Task Summary), preserve content
+    cleaned = re.sub(r'Task Summary[\s\S]*$', '', raw)
+    cleaned = re.sub(r'^─{5,}\s*$', '', cleaned, flags=re.MULTILINE)
+    cleaned = re.sub(r'Assistant\s*\(\d+\)[^\n]*\n', '', cleaned)
     return cleaned.strip()
 
 def start_job(prompt, mode):
