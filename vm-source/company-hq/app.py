@@ -1,4 +1,4 @@
-import sys, os, json, subprocess, re, time
+import sys, os, json, subprocess, re, time, threading, queue
 import urllib.request as ur
 sys.path.insert(0, '/data/pylibs')
 from flask import Flask, jsonify, request, Response, stream_with_context
@@ -6,9 +6,43 @@ from datetime import datetime
 import markdown as md_lib
 
 app = Flask(__name__)
-COMPANY   = '/data/company'
-HARNESS   = 'http://localhost:44285'
+COMPANY    = '/data/company'
+HARNESS    = 'http://localhost:44285'
 MODES_YAML = '/home/itzuser/.bob/settings/custom_modes.yaml'
+SLACK_WEBHOOK = 'https://hooks.slack.com/triggers/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'
+
+# ── SSE broadcast bus ─────────────────────────────────────────────────────────
+# All connected /api/events subscribers receive every pushed event
+_sse_subscribers: list[queue.Queue] = []
+_sse_lock = threading.Lock()
+
+def _sse_broadcast(event_type: str, data: dict):
+    """Push an event to all /api/events subscribers."""
+    payload = json.dumps({'type': event_type, 'content': data,
+                          'ts': datetime.utcnow().strftime('%H:%M UTC')})
+    with _sse_lock:
+        dead = []
+        for q in _sse_subscribers:
+            try:
+                q.put_nowait(payload)
+            except queue.Full:
+                dead.append(q)
+        for q in dead:
+            _sse_subscribers.remove(q)
+
+def slack_push(text: str, icon: str = '🤖'):
+    """Fire-and-forget POST to Slack webhook — runs in background thread."""
+    def _post():
+        try:
+            msg = f"{icon} *Bob Agent HQ* — {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}\n\n{text[:3000]}"
+            data = json.dumps({'message_queue': msg}).encode()
+            req = ur.Request(SLACK_WEBHOOK, data=data,
+                             headers={'Content-Type': 'application/json'}, method='POST')
+            with ur.urlopen(req, timeout=10) as r:
+                pass
+        except Exception:
+            pass
+    threading.Thread(target=_post, daemon=True).start()
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -429,12 +463,65 @@ def chat():
 
             yield send('reply', ceo_out)
 
+            # ── Push to Slack + SSE broadcast bus ─────────────────────────────
+            agents_used = [a for a, o in [('Intel',intel_out),('Ops',ops_out),('Dev',dev_out)] if o]
+            slack_summary = f"*Q:* {message}\n\n{ceo_out}"
+            if agents_used:
+                slack_summary += f"\n\n_Agents used: {', '.join(agents_used)}_"
+            slack_push(slack_summary, icon='👔')
+            _sse_broadcast('reply', {'message': message, 'reply': ceo_out,
+                                     'agents': agents_used,
+                                     'ts': datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')})
+
         except Exception as e:
             import traceback
             yield send('error', str(e))
 
     return Response(stream_with_context(generate()), mimetype='text/event-stream',
                     headers={'Cache-Control':'no-cache','X-Accel-Buffering':'no'})
+
+@app.route('/api/events')
+def sse_events():
+    """SSE stream — broadcasts every CEO reply to all connected browsers.
+    Lets any open tab (including dashboards) receive live Bob replies without
+    being the one who sent the chat message.
+    """
+    q = queue.Queue(maxsize=50)
+    with _sse_lock:
+        _sse_subscribers.append(q)
+
+    def stream():
+        try:
+            # Send a heartbeat immediately so the browser knows it's connected
+            yield f"data: {json.dumps({'type':'connected','content':'Bob HQ live'})}\n\n"
+            while True:
+                try:
+                    payload = q.get(timeout=25)
+                    yield f"data: {payload}\n\n"
+                except queue.Empty:
+                    yield ": heartbeat\n\n"  # SSE comment keeps connection alive
+        except GeneratorExit:
+            pass
+        finally:
+            with _sse_lock:
+                try:
+                    _sse_subscribers.remove(q)
+                except ValueError:
+                    pass
+
+    return Response(stream_with_context(stream()), mimetype='text/event-stream',
+                    headers={'Cache-Control':'no-cache','X-Accel-Buffering':'no'})
+
+@app.route('/api/slack/push', methods=['POST'])
+def slack_push_manual():
+    """Manually push a message to Slack. Body: {text, icon?}"""
+    body = request.get_json() or {}
+    text = body.get('text', '')
+    icon = body.get('icon', '🤖')
+    if not text:
+        return jsonify({'error': 'text required'}), 400
+    slack_push(text, icon)
+    return jsonify({'ok': True})
 
 @app.route('/dashboard/<path:filename>')
 def dashboard(filename):
@@ -1121,9 +1208,46 @@ function md(t){
 }
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
+// ── Live event bus (/api/events SSE) ──
+// Receives replies from ALL sources (other browser tabs, scheduled jobs, etc.)
+// and shows them as a system bubble with a 📡 badge so you know it's background.
+function initEventBus(){
+  var es=new EventSource(API_BASE+'/api/events');
+  es.onmessage=function(e){
+    try{
+      var ev=JSON.parse(e.data);
+      if(ev.type==='reply'){
+        // Only show if this tab didn't originate it (no active thinking indicator)
+        var think=document.getElementById('cThink');
+        if(think&&!think.classList.contains('show')){
+          var c=ev.content;
+          var label='📡 <em style="font-size:10px;color:var(--cyan)">Live update '+esc(c.ts||'')+'</em>';
+          if(c.agents&&c.agents.length){
+            label+=' <em style="font-size:10px;color:var(--muted)">via '+esc(c.agents.join(', '))+'</em>';
+          }
+          var wrap=document.getElementById('chatMsgs');
+          if(wrap){
+            var div=document.createElement('div');
+            div.className='msg ceo';
+            div.innerHTML='<div class="bubble" style="border-color:var(--cyan)44;background:rgba(118,227,234,.04)">'+
+              label+'<br><br>'+md(c.reply||'')+'</div>';
+            wrap.appendChild(div);wrap.scrollTop=9e9;
+          }
+          fetchState();
+        }
+      }
+    }catch(e){}
+  };
+  es.onerror=function(){
+    // Reconnect after 5s on error
+    es.close();
+    setTimeout(initEventBus,5000);
+  };
+}
+
 // ── Init ──
-if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',initSugs);}
-else{initSugs();}
+if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',function(){initSugs();initEventBus();});}
+else{initSugs();initEventBus();}
 </script>
 </body>
 </html>"""
