@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BOB Terminal</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0e1a; color: #c8d0e0; font-family: 'Courier New', monospace; font-size: 13px; }
+
+  /* TOP BAR */
+  .topbar { background: #0d1117; border-bottom: 1px solid #1e3a5f; padding: 8px 16px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  .topbar-left { display: flex; align-items: center; gap: 16px; }
+  .logo { color: #e8b04b; font-weight: bold; font-size: 16px; letter-spacing: 2px; }
+  .logo span { color: #4a9eff; }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #00d084; display: inline-block; margin-right: 4px; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .topbar-right { display: flex; gap: 12px; align-items: center; }
+  .clock { color: #4a9eff; font-size: 14px; font-weight: bold; }
+  .btn { background: #1e3a5f; border: 1px solid #2a5280; color: #4a9eff; padding: 4px 12px; cursor: pointer; font-family: inherit; font-size: 12px; border-radius: 2px; text-decoration: none; }
+  .btn:hover { background: #2a5280; }
+  .btn-orange { background: #3d2a00; border-color: #e8b04b; color: #e8b04b; }
+  .btn-orange:hover { background: #5a3e00; }
+
+  /* TICKER TAPE */
+  .ticker-wrap { background: #0d1117; border-bottom: 1px solid #1e3a5f; overflow: hidden; padding: 6px 0; }
+  .ticker { display: flex; gap: 0; white-space: nowrap; animation: scroll 60s linear infinite; }
+  .ticker:hover { animation-play-state: paused; }
+  @keyframes scroll { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+  .ticker-item { padding: 0 24px; border-right: 1px solid #1e3a5f; }
+  .ticker-sym { color: #e8b04b; font-weight: bold; }
+  .ticker-price { color: #c8d0e0; margin-left: 6px; }
+  .up { color: #00d084; }
+  .down { color: #ff4444; }
+
+  /* LAYOUT */
+  .main { display: grid; grid-template-columns: 1fr 1fr 340px; grid-template-rows: auto auto; gap: 1px; background: #1e3a5f; min-height: calc(100vh - 90px); }
+  .panel { background: #0a0e1a; padding: 12px; }
+
+  /* PANEL HEADER */
+  .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #1e3a5f; }
+  .panel-title { color: #e8b04b; font-size: 11px; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; }
+  .panel-time { color: #57606a; font-size: 10px; }
+
+  /* STOCKS TABLE */
+  .stocks-table { width: 100%; border-collapse: collapse; }
+  .stocks-table th { color: #57606a; font-size: 10px; text-align: right; padding: 3px 6px; border-bottom: 1px solid #1a2744; font-weight: normal; }
+  .stocks-table th:first-child { text-align: left; }
+  .stocks-table td { padding: 5px 6px; text-align: right; border-bottom: 1px solid #0f1829; font-size: 12px; }
+  .stocks-table td:first-child { text-align: left; }
+  .stocks-table tr:hover { background: #0f1829; }
+  .sym-label { color: #e8b04b; font-weight: bold; font-size: 11px; }
+  .name-label { color: #57606a; font-size: 10px; display: block; }
+  .section-divider { background: #0d1117; padding: 3px 6px; color: #2a5280; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; }
+
+  /* INDICES BAR */
+  .indices { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(6, 1fr); gap: 1px; background: #1e3a5f; }
+  .index-card { background: #0d1117; padding: 10px 14px; }
+  .index-name { color: #57606a; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; }
+  .index-price { color: #c8d0e0; font-size: 18px; font-weight: bold; margin: 4px 0 2px; }
+  .index-change { font-size: 12px; }
+
+  /* NEWS */
+  .news-list { list-style: none; }
+  .news-item { padding: 8px 0; border-bottom: 1px solid #0f1829; cursor: pointer; }
+  .news-item:hover { background: #0f1829; padding-left: 4px; transition: padding 0.1s; }
+  .news-source { color: #4a9eff; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; }
+  .news-title { color: #c8d0e0; font-size: 12px; margin: 3px 0; line-height: 1.4; }
+  .news-time { color: #57606a; font-size: 10px; }
+  .news-empty { color: #2a5280; font-size: 12px; padding: 20px 0; text-align: center; }
+  .refresh-btn { background: none; border: none; color: #4a9eff; cursor: pointer; font-family: inherit; font-size: 11px; }
+  .refresh-btn:hover { color: #e8b04b; }
+
+  /* SIDEBAR */
+  .sidebar { grid-row: span 2; }
+  .mini-chart { height: 60px; margin: 8px 0; display: flex; align-items: flex-end; gap: 2px; }
+  .mini-bar { flex: 1; background: #1e3a5f; border-radius: 1px; min-height: 4px; }
+  .commodity-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #0f1829; }
+  .commodity-name { color: #c8d0e0; font-size: 12px; }
+  .market-badge { display: inline-block; padding: 1px 6px; border-radius: 2px; font-size: 10px; margin: 2px; }
+  .badge-open { background: #003d1a; color: #00d084; border: 1px solid #00d084; }
+  .badge-closed { background: #3d0000; color: #ff4444; border: 1px solid #ff4444; }
+  .last-updated { color: #57606a; font-size: 10px; text-align: center; padding: 8px; border-top: 1px solid #1e3a5f; margin-top: 8px; }
+
+  /* SALES INTEL PANEL */
+  .intel-item { border-bottom: 1px solid #1a2840; padding: 10px 0; cursor: pointer; }
+  .intel-item:hover { background: #0d1520; }
+  .intel-item:last-child { border-bottom: none; }
+  .intel-company { color: #e8b04b; font-weight: bold; font-size: 12px; }
+  .intel-summary { color: #8b9ab0; font-size: 11px; margin: 3px 0; line-height: 1.4; }
+  .intel-meta { display: flex; gap: 8px; align-items: center; margin-top: 4px; }
+  .intel-badge { font-size: 9px; padding: 2px 6px; border-radius: 2px; font-weight: bold; text-transform: uppercase; }
+  .badge-high   { background: #3d0000; color: #ff4444; border: 1px solid #ff4444; }
+  .badge-medium { background: #3d2a00; color: #e8b04b; border: 1px solid #e8b04b; }
+  .badge-low    { background: #0a2a1a; color: #00d084; border: 1px solid #00d084; }
+  .intel-owner  { color: #57606a; font-size: 10px; }
+  .intel-time   { color: #2a5280; font-size: 10px; margin-left: auto; }
+  .intel-signals { color: #4a9eff; font-size: 10px; }
+  .intel-empty  { color: #2a5280; font-size: 11px; padding: 20px 0; text-align: center; }
+
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="logo">BOB <span>TERMINAL</span></div>
+    <div><span class="status-dot"></span><span style="font-size:11px;color:#00d084">LIVE</span></div>
+    <div style="color:#57606a;font-size:11px" id="last-updated">Loading...</div>
+  </div>
+  <div class="topbar-right">
+    <div class="clock" id="clock"></div>
+    <button class="btn btn-orange" onclick="triggerRefresh()">⟳ REFRESH</button>
+    <a class="btn" href="/chat">💬 BOB CHAT</a>
+    <a class="btn" href="/tickets" style="border-color:#9b6dff;color:#9b6dff">🎫 TICKETS</a>
+    <a class="btn" href="/system" style="border-color:#9b59b6;color:#9b59b6">⚙ SYSTEM</a>
+  </div>
+</div>
+
+<!-- TICKER TAPE -->
+<div class="ticker-wrap">
+  <div class="ticker" id="ticker">
+    <span style="color:#57606a;padding:0 24px">Loading market data...</span>
+  </div>
+</div>
+
+<!-- INDICES BAR -->
+<div class="indices" id="indices">
+  <div class="index-card"><div class="index-name">S&P 500</div><div class="index-price" id="sp500">—</div><div class="index-change" id="sp500c">—</div></div>
+  <div class="index-card"><div class="index-name">DOW JONES</div><div class="index-price" id="dji">—</div><div class="index-change" id="djic">—</div></div>
+  <div class="index-card"><div class="index-name">NASDAQ</div><div class="index-price" id="ixic">—</div><div class="index-change" id="ixicc">—</div></div>
+  <div class="index-card"><div class="index-name">GOLD</div><div class="index-price" id="gold">—</div><div class="index-change" id="goldc">—</div></div>
+  <div class="index-card"><div class="index-name">OIL (WTI)</div><div class="index-price" id="oil">—</div><div class="index-change" id="oilc">—</div></div>
+  <div class="index-card"><div class="index-name">BTC/USD</div><div class="index-price" id="btc">—</div><div class="index-change" id="btcc">—</div></div>
+</div>
+
+<div class="main">
+  <!-- EQUITIES -->
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">📈 Equities</span>
+      <span class="panel-time" id="eq-time">—</span>
+    </div>
+    <table class="stocks-table">
+      <thead><tr><th>Symbol</th><th>Price</th><th>Chg</th><th>Chg%</th><th>Volume</th></tr></thead>
+      <tbody id="equities-body"><tr><td colspan="5" style="color:#2a5280;text-align:center;padding:20px">Loading...</td></tr></tbody>
+    </table>
+  </div>
+
+  <!-- NEWS -->
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">📰 Market News</span>
+      <button class="refresh-btn" onclick="fetchNews()">⟳ refresh</button>
+    </div>
+    <ul class="news-list" id="news-list">
+      <li class="news-empty">Run a refresh to load news via Bob + Firecrawl</li>
+    </ul>
+  </div>
+
+  <!-- SIDEBAR -->
+  <div class="panel sidebar">
+    <div class="panel-header"><span class="panel-title">🌍 Markets</span></div>
+
+    <div style="margin-bottom:12px">
+      <div style="color:#57606a;font-size:10px;margin-bottom:6px">MARKET STATUS</div>
+      <span class="market-badge badge-open" id="us-status">US OPEN</span>
+      <span class="market-badge" id="eu-status" style="background:#1a1a2e;color:#57606a;border:1px solid #2a5280">EU —</span>
+      <span class="market-badge" id="as-status" style="background:#1a1a2e;color:#57606a;border:1px solid #2a5280">ASIA —</span>
+    </div>
+
+    <div class="panel-header" style="margin-top:12px"><span class="panel-title">💰 Crypto</span></div>
+    <div id="crypto-panel">
+      <div style="color:#2a5280;font-size:11px;padding:8px 0">Loading...</div>
+    </div>
+
+    <div class="panel-header" style="margin-top:12px"><span class="panel-title">🛢 Commodities</span></div>
+    <div id="commodities-panel">
+      <div style="color:#2a5280;font-size:11px;padding:8px 0">Loading...</div>
+    </div>
+
+    <div class="last-updated" id="sidebar-updated">Last updated: —</div>
+  </div>
+
+<!-- ARCHITECTURE SUMMARY -->
+<div style="background:#0d1117;border-top:1px solid #1e3a5f;padding:0">
+  <div class="panel" style="max-width:100%;border-top:none">
+    <div class="panel-header" style="padding:12px 16px">
+      <span class="panel-title">⚙ Platform Architecture</span>
+      <span style="color:#57606a;font-size:10px;margin-left:8px">HeadlessAI — IBM Bob v2.0.0 on Azure RHEL 10.2 · 16 CPU · 60GB RAM · 1TB /data</span>
+      <a href="/system" style="margin-left:auto;color:#9b59b6;font-size:11px;text-decoration:none">full system view →</a>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1px;background:#1e3a5f">
+
+      <div style="background:#0a0e1a;padding:12px">
+        <div style="color:#e8b04b;font-size:10px;font-weight:bold;letter-spacing:1px;margin-bottom:8px">AI ENGINE</div>
+        <div style="color:#c8d0e0;font-size:11px;margin-bottom:4px">🤖 IBM Bob v2.0.0</div>
+        <div style="color:#57606a;font-size:10px">Headless CLI · async task queue</div>
+        <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:4px">
+          <span style="background:#1e3a5f;color:#4a9eff;padding:2px 6px;font-size:9px;border-radius:2px">agent</span>
+          <span style="background:#1e3a5f;color:#4a9eff;padding:2px 6px;font-size:9px;border-radius:2px">plan</span>
+          <span style="background:#1e3a5f;color:#4a9eff;padding:2px 6px;font-size:9px;border-radius:2px">ask</span>
+          <span style="background:#2a1a3a;color:#9b59b6;padding:2px 6px;font-size:9px;border-radius:2px">terminal-ops</span>
+          <span style="background:#2a1a3a;color:#9b59b6;padding:2px 6px;font-size:9px;border-radius:2px">db-manager</span>
+          <span style="background:#2a1a3a;color:#9b59b6;padding:2px 6px;font-size:9px;border-radius:2px">vault-manager</span>
+          <span style="background:#2a1a3a;color:#9b59b6;padding:2px 6px;font-size:9px;border-radius:2px">webapp-tester</span>
+        </div>
+      </div>
+
+      <div style="background:#0a0e1a;padding:12px">
+        <div style="color:#e8b04b;font-size:10px;font-weight:bold;letter-spacing:1px;margin-bottom:8px">MCP TOOLS</div>
+        <div style="font-size:10px;line-height:2;color:#c8d0e0">
+          🕷️ firecrawl — web scraping + search<br>
+          🗄️ postgres — PostgreSQL 16 :5432<br>
+          📄 mongodb — MongoDB 8 :27017<br>
+          ⚡ redis — Valkey 8 :6379<br>
+          📚 obsidian-vault — /data/vault
+        </div>
+      </div>
+
+      <div style="background:#0a0e1a;padding:12px">
+        <div style="color:#e8b04b;font-size:10px;font-weight:bold;letter-spacing:1px;margin-bottom:8px">SKILLS</div>
+        <div style="font-size:10px;line-height:2;color:#c8d0e0">
+          🗄️ db-manager — PostgreSQL · MongoDB · Valkey<br>
+          📚 obsidian-vault — notes · git · GitHub push<br>
+          🔄 claude-skill-porter — port Claude→Bob skills<br>
+          🧪 webapp-testing — Playwright + server lifecycle
+        </div>
+      </div>
+
+      <div style="background:#0a0e1a;padding:12px">
+        <div style="color:#e8b04b;font-size:10px;font-weight:bold;letter-spacing:1px;margin-bottom:8px">INSTALLED STACK</div>
+        <div style="font-size:10px;line-height:2;color:#c8d0e0">
+          🟢 Node.js 22.23.2 + npm<br>
+          🐍 Python 3.12.13 + pip<br>
+          📦 LangGraph · LangChain · FastAPI<br>
+          🔧 git 2.52 · tmux · curl · axios
+        </div>
+      </div>
+
+      <div style="background:#0a0e1a;padding:12px">
+        <div style="color:#e8b04b;font-size:10px;font-weight:bold;letter-spacing:1px;margin-bottom:8px">SALES INTEL PIPELINE</div>
+        <div style="font-size:10px;color:#c8d0e0;line-height:1.8">
+          🕷️ Firecrawl scrapes target accounts<br>
+          🤖 Bob AI generates buying signal briefs<br>
+          💾 Saved to /data/sales-intel/briefs/<br>
+          💬 Posted to Slack via webhook<br>
+          ⏰ Cron: daily 7AM UTC
+        </div>
+        <div style="margin-top:8px;font-size:10px;color:#4a9eff" id="arch-intel-count">Loading accounts...</div>
+      </div>
+
+      <div style="background:#0a0e1a;padding:12px">
+        <div style="color:#e8b04b;font-size:10px;font-weight:bold;letter-spacing:1px;margin-bottom:8px">ENDPOINTS</div>
+        <div style="font-size:10px;font-family:monospace;line-height:2;color:#57606a">
+          <span style="color:#4a9eff">GET</span>  /api/intel<br>
+          <span style="color:#4a9eff">GET</span>  /api/intel/:id<br>
+          <span style="color:#00d084">POST</span> /api/intel/refresh<br>
+          <span style="color:#00d084">POST</span> /api/intel/accounts<br>
+          <span style="color:#4a9eff">GET</span>  /api/stocks · /api/news<br>
+          <span style="color:#4a9eff">GET</span>  /api/system · /api/status
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- SALES INTELLIGENCE PANEL -->
+<div style="background:#0d1117;border-top:1px solid #1e3a5f;padding:0">
+  <div class="panel" style="max-width:100%;border-top:none">
+    <div class="panel-header" style="padding:12px 16px">
+      <span class="panel-title">🎯 Sales Intelligence</span>
+      <span style="color:#57606a;font-size:10px;margin-left:8px">AI-powered account briefs — updated daily 7AM UTC</span>
+      <button class="refresh-btn" onclick="refreshIntel()" style="margin-left:auto" id="intel-refresh-btn">⟳ refresh now</button>
+    </div>
+    <div id="intel-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:1px;background:#1e3a5f;padding:0">
+      <div style="background:#0a0e1a;padding:16px;color:#2a5280;font-size:11px;text-align:center">Loading account briefs...</div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+  const fmt = (n, dec=2) => n != null ? Number(n).toLocaleString('en-US', {minimumFractionDigits:dec, maximumFractionDigits:dec}) : '—';
+  const pct = n => n != null ? (n >= 0 ? '+' : '') + Number(n).toFixed(2) + '%' : '—';
+  const cls = n => n >= 0 ? 'up' : 'down';
+
+  function updateClock() {
+    const now = new Date();
+    document.getElementById('clock').textContent =
+      now.toUTCString().slice(0, -4) + ' UTC';
+  }
+  setInterval(updateClock, 1000);
+  updateClock();
+
+  function updateMarketStatus() {
+    const now = new Date();
+    const utcH = now.getUTCHours(), utcM = now.getUTCMinutes();
+    const utcMins = utcH * 60 + utcM;
+    const day = now.getUTCDay();
+    const isWeekday = day >= 1 && day <= 5;
+
+    // US: 13:30-20:00 UTC
+    const usOpen = isWeekday && utcMins >= 810 && utcMins < 1200;
+    // EU: 08:00-16:30 UTC
+    const euOpen = isWeekday && utcMins >= 480 && utcMins < 990;
+    // ASIA: 00:00-06:00 UTC (approx Tokyo)
+    const asOpen = isWeekday && (utcMins < 360 || utcMins >= 1380);
+
+    const usBadge = document.getElementById('us-status');
+    usBadge.textContent = usOpen ? 'US OPEN' : 'US CLOSED';
+    usBadge.className = 'market-badge ' + (usOpen ? 'badge-open' : 'badge-closed');
+    const euBadge = document.getElementById('eu-status');
+    euBadge.textContent = euOpen ? 'EU OPEN' : 'EU CLOSED';
+    euBadge.className = 'market-badge ' + (euOpen ? 'badge-open' : 'badge-closed');
+    const asBadge = document.getElementById('as-status');
+    asBadge.textContent = asOpen ? 'ASIA OPEN' : 'ASIA CLOSED';
+    asBadge.className = 'market-badge ' + (asOpen ? 'badge-open' : 'badge-closed');
+  }
+  setInterval(updateMarketStatus, 60000);
+  updateMarketStatus();
+
+  async function fetchStocks() {
+    try {
+      const symbols = ['AAPL','MSFT','GOOGL','AMZN','NVDA','META','TSLA','IBM','%5EGSPC','%5EDJI','%5EIXIC','GC%3DF','CL%3DF','BTC-USD','ETH-USD'];
+      const url = 'https://query1.finance.yahoo.com/v7/finance/quote?symbols=' + symbols.join(',');
+      const raw = await fetch(url, { headers: { 'Accept': 'application/json' } });
+      const json = await raw.json();
+      const quotes = json?.quoteResponse?.result || [];
+      const stocks = {};
+      quotes.forEach(q => { stocks[q.symbol] = { name: q.shortName||q.symbol, price: q.regularMarketPrice, change: q.regularMarketChange, changePct: q.regularMarketChangePercent, high: q.regularMarketDayHigh, low: q.regularMarketDayLow, volume: q.regularMarketVolume, marketCap: q.marketCap, currency: q.currency }; });
+      const lastUpdated = new Date().toISOString();
+      if (!stocks) return;
+
+      // Indices
+      const setIdx = (id, sym, cid) => {
+        const s = stocks[sym];
+        if (!s) return;
+        document.getElementById(id).textContent = fmt(s.price);
+        const el = document.getElementById(cid);
+        el.textContent = (s.change >= 0 ? '+' : '') + fmt(s.change) + ' (' + pct(s.changePct) + ')';
+        el.className = 'index-change ' + cls(s.change);
+      };
+      setIdx('sp500','%5EGSPC','sp500c'); setIdx('dji','%5EDJI','djic');
+      setIdx('ixic','%5EIXIC','ixicc'); setIdx('gold','GC%3DF','goldc');
+      setIdx('oil','CL%3DF','oilc'); setIdx('btc','BTC-USD','btcc');
+
+      // Ticker
+      const equitySyms = ['AAPL','MSFT','GOOGL','AMZN','NVDA','META','TSLA','IBM'];
+      const tickerHtml = [...equitySyms, 'BTC-USD','ETH-USD','GC=F','CL=F']
+        .filter(s => stocks[s])
+        .map(s => {
+          const q = stocks[s];
+          const arrow = q.change >= 0 ? '▲' : '▼';
+          return `<span class="ticker-item"><span class="ticker-sym">${s}</span><span class="ticker-price">${fmt(q.price)}</span> <span class="${cls(q.change)}">${arrow} ${pct(q.changePct)}</span></span>`;
+        }).join('');
+      document.getElementById('ticker').innerHTML = tickerHtml + tickerHtml;
+
+      // Equities table
+      const tbody = document.getElementById('equities-body');
+      tbody.innerHTML = equitySyms.filter(s => stocks[s]).map(s => {
+        const q = stocks[s];
+        return `<tr>
+          <td><span class="sym-label">${s}</span><span class="name-label">${q.name}</span></td>
+          <td>$${fmt(q.price)}</td>
+          <td class="${cls(q.change)}">${q.change >= 0 ? '+' : ''}${fmt(q.change)}</td>
+          <td class="${cls(q.changePct)}">${pct(q.changePct)}</td>
+          <td style="color:#57606a">${q.volume ? (q.volume/1e6).toFixed(1)+'M' : '—'}</td>
+        </tr>`;
+      }).join('');
+
+      // Crypto sidebar
+      document.getElementById('crypto-panel').innerHTML =
+        ['BTC-USD','ETH-USD'].filter(s => stocks[s]).map(s => {
+          const q = stocks[s];
+          return `<div class="commodity-row">
+            <span class="commodity-name">${s.replace('-USD','')}</span>
+            <span>$${fmt(q.price)} <span class="${cls(q.change)}">${pct(q.changePct)}</span></span>
+          </div>`;
+        }).join('');
+
+      // Commodities sidebar
+      document.getElementById('commodities-panel').innerHTML =
+        [['GC=F','Gold'],['CL=F','Oil WTI']].filter(([s]) => stocks[s]).map(([s, label]) => {
+          const q = stocks[s];
+          return `<div class="commodity-row">
+            <span class="commodity-name">${label}</span>
+            <span>$${fmt(q.price)} <span class="${cls(q.change)}">${pct(q.changePct)}</span></span>
+          </div>`;
+        }).join('');
+
+      if (lastUpdated) {
+        const d = new Date(lastUpdated);
+        document.getElementById('last-updated').textContent = 'Updated: ' + d.toUTCString().slice(0,-4) + ' UTC';
+        document.getElementById('sidebar-updated').textContent = 'Last updated: ' + d.toLocaleTimeString();
+        document.getElementById('eq-time').textContent = d.toLocaleTimeString();
+      }
+    } catch(e) { console.error('Stock error:', e); }
+  }
+
+  async function fetchNews() {
+    try {
+      const res = await fetch('/api/news');
+      const { news, lastUpdated } = await res.json();
+      const list = document.getElementById('news-list');
+      if (!news || news.length === 0) {
+        list.innerHTML = '<li class="news-empty">No news yet — click REFRESH to fetch via Bob + Firecrawl</li>';
+        return;
+      }
+      list.innerHTML = news.map(n => `
+        <li class="news-item" onclick="window.open('${n.url || '#'}','_blank')">
+          <div class="news-source">${n.source || 'News'}</div>
+          <div class="news-title">${n.title}</div>
+          <div class="news-time">${n.summary ? n.summary.slice(0,100) + '…' : ''}</div>
+        </li>`).join('');
+    } catch(e) { console.error('News error:', e); }
+  }
+
+  async function triggerRefresh() {
+    const btn = document.querySelector('.btn-orange');
+    btn.textContent = '⟳ REFRESHING...';
+    btn.disabled = true;
+    try {
+      await fetch('/api/refresh', { method: 'POST' });
+      await fetchStocks();
+      await fetchNews();
+    } finally {
+      btn.textContent = '⟳ REFRESH';
+      btn.disabled = false;
+    }
+  }
+
+
+  // ── SALES INTELLIGENCE ─────────────────────────────────────────────────
+  async function fetchIntel() {
+    try {
+      const res  = await fetch('/api/intel');
+      const data = await res.json();
+      renderIntel(data);
+    } catch(e) { console.error('Intel error:', e); }
+  }
+
+  function renderIntel(briefs) {
+    const grid = document.getElementById('intel-grid');
+    if (!briefs || !briefs.length) {
+      grid.innerHTML = '<div style="background:#0a0e1a;padding:16px;color:#2a5280;font-size:11px;text-align:center;grid-column:1/-1">No briefs yet — click ⟳ refresh now to run the first analysis</div>';
+      return;
+    }
+    const archCount = document.getElementById('arch-intel-count');
+  if (archCount) archCount.textContent = briefs.length + ' account' + (briefs.length !== 1 ? 's' : '') + ' monitored';
+  const urgencyEmoji = { high: '🔴', medium: '🟡', low: '🟢' };
+    grid.innerHTML = briefs.map(b => {
+      const age = b.generatedAt ? timeSince(b.generatedAt) : '—';
+      const urgency = b.urgency || 'low';
+      return `
+      <div class="panel" style="margin:0;border-radius:0;cursor:pointer" onclick="window.open('/api/intel/${b.accountId}','_blank')">
+        <div class="intel-item" style="border:none;padding:12px">
+          <div class="intel-company">${urgencyEmoji[urgency]||'⚪'} ${b.accountName} <span style="color:#57606a;font-weight:normal;font-size:10px">${b.domain||''}</span></div>
+          <div class="intel-summary">${(b.summary||'No summary yet').slice(0,140)}${b.summary&&b.summary.length>140?'…':''}</div>
+          <div class="intel-meta">
+            <span class="intel-badge badge-${urgency}">${urgency}</span>
+            <span class="intel-signals">${b.signalCount||0} signal${b.signalCount!==1?'s':''}</span>
+            <span class="intel-owner">${b.owner||'Unassigned'} · ${b.tier||''}</span>
+            <span class="intel-time">${age}</span>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function timeSince(iso) {
+    const sec = Math.floor((Date.now() - new Date(iso)) / 1000);
+    if (sec < 60)   return sec + 's ago';
+    if (sec < 3600) return Math.floor(sec/60) + 'm ago';
+    if (sec < 86400) return Math.floor(sec/3600) + 'h ago';
+    return Math.floor(sec/86400) + 'd ago';
+  }
+
+  async function refreshIntel() {
+    const btn = document.getElementById('intel-refresh-btn');
+    btn.textContent = '⟳ running...';
+    btn.disabled = true;
+    try {
+      await fetch('/api/intel/refresh', { method: 'POST', headers: {'Content-Type':'application/json'}, body: '{}' });
+      // Poll for results every 10s for up to 5 min
+      let attempts = 0;
+      const poll = setInterval(async () => {
+        attempts++;
+        await fetchIntel();
+        if (attempts > 30) { clearInterval(poll); btn.textContent = '⟳ refresh now'; btn.disabled = false; }
+      }, 10000);
+      setTimeout(() => { clearInterval(poll); btn.textContent = '⟳ refresh now'; btn.disabled = false; }, 310000);
+    } catch(e) {
+      btn.textContent = '⟳ refresh now';
+      btn.disabled = false;
+    }
+  }
+
+  // Load intel on startup
+  fetchIntel();
+
+  // Init
+  fetchStocks();
+  fetchNews();
+  // Auto-refresh stocks every 5 minutes
+  setInterval(fetchStocks, 300000);
+</script>
+</body>
+</html>

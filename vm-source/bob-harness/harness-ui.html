@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IBM Bob Harness</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap">
+<style>
+:root{
+  --bg:#161616;--bg-hover:#262626;--layer-01:#262626;--layer-02:#393939;--layer-hover:#333333;
+  --border-subtle:#393939;--border-strong:#6f6f6f;
+  --text-primary:#f4f4f4;--text-secondary:#c6c6c6;--text-placeholder:#6f6f6f;--text-on-color:#fff;
+  --link:#78a9ff;--interactive:#4589ff;--focus:#fff;--highlight:#002d9c;
+  --success:#42be65;--warning:#f1c21b;--error:#fa4d56;
+  --btn-primary:#0f62fe;--btn-primary-hover:#0353e9;--btn-secondary:#393939;--btn-secondary-hover:#474747;
+  --field:#262626;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text-primary);font-family:'IBM Plex Sans',sans-serif;font-size:14px;line-height:1.43;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+/* header */
+header{background:#000;border-bottom:1px solid var(--border-subtle);height:48px;display:flex;align-items:center;padding:0 16px;flex-shrink:0}
+.h-logo{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--text-primary);text-decoration:none}
+.h-logo strong{font-weight:600}
+.h-div{width:1px;height:16px;background:var(--border-strong);margin:0 12px}
+.h-nav{display:flex;align-items:center;margin-left:auto}
+.h-link{height:48px;padding:0 16px;display:flex;align-items:center;font-size:14px;color:var(--text-secondary);text-decoration:none;cursor:pointer;border:none;background:none;font-family:'IBM Plex Sans',sans-serif;transition:background .1s,color .1s}
+.h-link:hover{background:var(--bg-hover);color:var(--text-primary)}
+.h-health{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary);margin-left:16px;padding-left:16px;border-left:1px solid var(--border-subtle)}
+.h-dot{width:8px;height:8px;border-radius:50%;background:var(--success)}
+/* layout */
+.layout{display:grid;grid-template-columns:320px 1fr;flex:1;overflow:hidden}
+/* left */
+.left{background:var(--layer-01);border-right:1px solid var(--border-subtle);display:flex;flex-direction:column;overflow:hidden}
+/* tabs */
+.tabs{display:flex;border-bottom:1px solid var(--border-subtle);flex-shrink:0}
+.tab{flex:1;height:40px;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--text-secondary);cursor:pointer;border-bottom:2px solid transparent;transition:all .1s;user-select:none}
+.tab:hover{color:var(--text-primary);background:var(--layer-hover)}
+.tab.sel{color:var(--text-primary);border-bottom-color:var(--interactive)}
+/* form */
+.form{padding:16px;display:flex;flex-direction:column;gap:16px;overflow-y:auto;flex:1}
+.lbl{font-size:12px;letter-spacing:.32px;color:var(--text-secondary);margin-bottom:4px;display:block}
+input.fi,textarea.fi,select.fi{width:100%;background:var(--field);border:none;border-bottom:1px solid var(--border-strong);color:var(--text-primary);font-family:'IBM Plex Sans',sans-serif;font-size:14px;padding:8px 16px;outline:none;-webkit-appearance:none;appearance:none}
+input.fi{height:40px}
+textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
+select.fi{height:40px;cursor:pointer}
+input.fi:focus,textarea.fi:focus,select.fi:focus{border-bottom-color:var(--focus);outline:2px solid var(--focus);outline-offset:-2px}
+input.fi::placeholder,textarea.fi::placeholder{color:var(--text-placeholder)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.ff{display:flex;flex-direction:column}
+.btn-p{background:var(--btn-primary);color:var(--text-on-color);font-family:'IBM Plex Sans',sans-serif;font-size:14px;height:40px;padding:0 32px;border:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:background .1s}
+.btn-p:hover:not(:disabled){background:var(--btn-primary-hover)}
+.btn-p:disabled{opacity:.5;cursor:not-allowed}
+.btn-s{background:var(--btn-secondary);color:var(--text-primary);font-family:'IBM Plex Sans',sans-serif;font-size:14px;height:40px;padding:0 32px;border:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:background .1s}
+.btn-s:hover:not(:disabled){background:var(--btn-secondary-hover)}
+.btn-g{background:transparent;color:var(--link);padding:0 12px;height:32px;font-size:12px;font-family:'IBM Plex Sans',sans-serif;border:none;cursor:pointer;display:inline-flex;align-items:center;transition:background .1s}
+.btn-g:hover{background:var(--bg-hover)}
+.btn-d{background:transparent;color:var(--error);padding:0 12px;height:32px;font-size:12px;font-family:'IBM Plex Sans',sans-serif;border:none;cursor:pointer;display:inline-flex;align-items:center}
+.btn-d:hover{background:rgba(250,77,86,.12)}
+.btn-row{display:flex;gap:8px;align-items:center}
+.tag-green{font-size:11px;padding:1px 8px;border-radius:100px;background:#044317;color:#42be65;white-space:nowrap}
+.tag-blue{font-size:11px;padding:1px 8px;border-radius:100px;background:#0043ce;color:#a6c8ff;white-space:nowrap}
+.tag-red{font-size:11px;padding:1px 8px;border-radius:100px;background:#750e13;color:#ff8389;white-space:nowrap}
+.tag-gray{font-size:11px;padding:1px 8px;border-radius:100px;background:#393939;color:#c6c6c6;white-space:nowrap}
+.sec-lbl{font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:1.6px;padding:16px 0 8px;border-top:1px solid var(--border-subtle);margin-top:4px}
+/* jobs */
+.job-list{overflow-y:auto;flex:1}
+.job-row{min-height:64px;padding:12px 16px;display:flex;align-items:center;border-bottom:1px solid var(--border-subtle);cursor:pointer;transition:background .1s}
+.job-row:hover{background:var(--layer-hover)}
+.job-row.sel{background:var(--highlight);border-left:3px solid var(--interactive)}
+.job-p{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
+.job-t{font-size:11px;color:var(--text-secondary);white-space:nowrap}
+/* right */
+.right{display:flex;flex-direction:column;overflow:hidden}
+.out-bar{height:48px;padding:0 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border-subtle);background:var(--layer-01);flex-shrink:0}
+.out-title{font-size:14px;font-weight:600}
+.out-body{flex:1;overflow-y:auto;padding:24px}
+.out-pre{font-family:'IBM Plex Mono',monospace;font-size:13px;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+.out-pre.stream{color:var(--success)}
+.meta{display:none;padding:8px 16px;border-top:1px solid var(--border-subtle);background:var(--layer-01);gap:24px;flex-wrap:wrap;align-items:center;flex-shrink:0}
+.mp{font-size:12px;color:var(--text-secondary)}
+.mp span{color:var(--text-primary);font-family:'IBM Plex Mono',monospace}
+/* schedules */
+.sched-list{overflow-y:auto;flex:1}
+.sched-row{padding:12px 16px;border-bottom:1px solid var(--border-subtle);display:flex;justify-content:space-between;align-items:center;gap:8px}
+.sched-name{font-size:13px;font-weight:600}
+.sched-cron{font-size:11px;font-family:'IBM Plex Mono',monospace;color:#be95ff;margin-top:2px}
+.sched-sub{font-size:11px;color:var(--text-secondary);margin-top:2px}
+.loading{display:none;align-items:center;gap:8px;font-size:12px;color:var(--text-secondary)}
+.spin{width:16px;height:16px;border:2px solid var(--border-subtle);border-top-color:var(--interactive);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.toast{position:fixed;bottom:16px;right:16px;width:288px;background:var(--layer-02);border-left:3px solid var(--interactive);padding:12px 16px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:9999}
+.toast.show{opacity:1}
+.toast.err{border-left-color:var(--error)}
+.toast.ok{border-left-color:var(--success)}
+.toast-sub{font-size:11px;color:var(--text-secondary);margin-top:2px;font-family:'IBM Plex Mono',monospace}
+.empty{padding:48px 16px;text-align:center;color:var(--text-secondary)}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border-subtle)}
+</style>
+</head>
+<body>
+
+<header>
+  <a class="h-logo" href="#">
+    <svg width="20" height="20" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+      <rect width="32" height="32" fill="#0F62FE"/>
+      <text x="4" y="22" font-family="IBM Plex Sans,sans-serif" font-weight="700" font-size="13" fill="white">IBM</text>
+    </svg>
+    <div class="h-div"></div>
+    <strong>Bob</strong>&nbsp;Harness
+  </a>
+  <nav class="h-nav">
+    <a class="h-link" href="/hq" target="_blank">Agent HQ</a>
+    <a class="h-link" href="/docs" target="_blank">API Docs</a>
+    <a class="h-link" href="http://20.89.63.64:44290" target="_blank">Terminal</a>
+    <a class="h-link" href="http://20.89.63.64:44290/chat" target="_blank">Ops Panel</a>
+    <div class="h-health">
+      <div class="h-dot" id="hDot"></div>
+      <span id="hTxt">connecting…</span>
+    </div>
+  </nav>
+</header>
+
+<div class="layout">
+  <!-- LEFT -->
+  <div class="left">
+    <div class="tabs">
+      <div class="tab sel" id="tb-invoke" onclick="switchTab('invoke')">Invoke</div>
+      <div class="tab" id="tb-jobs" onclick="switchTab('jobs')">Jobs</div>
+      <div class="tab" id="tb-schedules" onclick="switchTab('schedules')">Schedules</div>
+    </div>
+
+    <!-- INVOKE TAB -->
+    <div id="tp-invoke" class="form">
+      <div class="ff">
+        <label class="lbl">Endpoint</label>
+        <select id="ep" class="fi" onchange="onEpChange()">
+          <option value="invoke">POST /invoke — synchronous</option>
+          <option value="jobs">POST /jobs — async job</option>
+          <option value="run">POST /run — orchestrated (verify + retry)</option>
+          <option value="stream">POST /stream — live SSE</option>
+        </select>
+      </div>
+      <div class="ff">
+        <label class="lbl">Prompt</label>
+        <textarea id="prompt" class="fi" placeholder="e.g. Check disk usage on /data and summarise"></textarea>
+      </div>
+      <div class="grid2">
+        <div class="ff"><label class="lbl">Mode</label><input id="mode" class="fi" placeholder="unrestricted-dev"/></div>
+        <div class="ff"><label class="lbl">Workdir</label><input id="workdir" class="fi" placeholder="/data"/></div>
+      </div>
+      <div id="run-opts" style="display:none">
+        <div class="sec-lbl">Orchestration</div>
+        <div class="ff" style="margin-top:12px">
+          <label class="lbl">Verify command (exit 0 = pass)</label>
+          <input id="check_cmd" class="fi" placeholder="test -f /data/output.txt"/>
+        </div>
+        <div class="grid2" style="margin-top:12px">
+          <div class="ff"><label class="lbl">Max attempts</label><input id="max_att" class="fi" type="number" value="3" min="1" max="10"/></div>
+          <div class="ff"><label class="lbl">Timeout (s)</label><input id="timeout_s" class="fi" type="number" value="120" min="10"/></div>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn-p" id="runBtn" onclick="doSubmit()">Run</button>
+        <button class="btn-s" onclick="clearOut()">Clear</button>
+      </div>
+      <div class="loading" id="lb"><div class="spin"></div><span id="lt">Running…</span></div>
+    </div>
+
+    <!-- JOBS TAB -->
+    <div id="tp-jobs" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+      <div style="padding:8px 12px;display:flex;gap:8px;flex-shrink:0;border-bottom:1px solid var(--border-subtle)">
+        <input id="jid" class="fi" placeholder="Job ID" style="flex:1;height:32px;font-size:12px"/>
+        <button class="btn-g" onclick="loadById()">Load</button>
+        <button class="btn-g" onclick="loadJobs()">↻</button>
+      </div>
+      <div class="job-list" id="jList"><div class="empty">Click ↻ to load jobs</div></div>
+    </div>
+
+    <!-- SCHEDULES TAB -->
+    <div id="tp-schedules" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+      <div class="form" style="max-height:270px;flex:0 0 auto;border-bottom:1px solid var(--border-subtle)">
+        <div class="sec-lbl" style="margin-top:0;padding-top:0;border-top:none">New Schedule</div>
+        <div class="grid2">
+          <div class="ff"><label class="lbl">Name</label><input id="sn" class="fi" placeholder="daily-check"/></div>
+          <div class="ff"><label class="lbl">Cron</label><input id="sc" class="fi" placeholder="0 9 * * *"/></div>
+        </div>
+        <div class="ff">
+          <label class="lbl">Prompt</label>
+          <textarea id="sp" class="fi" style="min-height:56px" placeholder="Check disk usage and summarise"></textarea>
+        </div>
+        <div class="grid2">
+          <div class="ff"><label class="lbl">Mode</label><input id="sm" class="fi" placeholder="unrestricted-dev"/></div>
+          <div class="ff"><label class="lbl">Slack channel</label><input id="ss" class="fi" placeholder="#bob-alerts"/></div>
+        </div>
+        <button class="btn-p" onclick="createSched()" style="width:100%">Create Schedule</button>
+      </div>
+      <div style="padding:8px 12px;border-bottom:1px solid var(--border-subtle);flex-shrink:0">
+        <button class="btn-g" onclick="loadScheds()" style="width:100%">↻ Refresh</button>
+      </div>
+      <div class="sched-list" id="sList"><div class="empty">Click Refresh</div></div>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="right">
+    <div class="out-bar">
+      <span class="out-title" id="outTitle">Output</span>
+      <div style="display:flex;gap:4px">
+        <button class="btn-g" onclick="copyOut()">Copy</button>
+        <button class="btn-g" onclick="clearOut()">Clear</button>
+      </div>
+    </div>
+    <div class="out-body" id="outBody"><div class="empty">Submit a request to see output here.</div></div>
+    <div class="meta" id="meta">
+      <div class="mp">ID <span id="mId">—</span></div>
+      <div class="mp">Status <span id="mStatus">—</span></div>
+      <div class="mp">Mode <span id="mMode">—</span></div>
+      <div class="mp">Started <span id="mStart">—</span></div>
+      <div class="mp">Duration <span id="mDur">—</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><div id="tMsg"></div><div class="toast-sub" id="tSub"></div></div>
+
+<script>
+function toast(msg,sub,type){
+  const el=document.getElementById('toast');
+  document.getElementById('tMsg').textContent=msg;
+  document.getElementById('tSub').textContent=sub||'';
+  el.className='toast show '+(type||'');
+  setTimeout(()=>el.className='toast',3500);
+}
+async function checkHealth(){
+  const dot=document.getElementById('hDot'),txt=document.getElementById('hTxt');
+  try{
+    const d=await fetch('/health').then(r=>r.json());
+    dot.style.background=d.status==='ok'&&d.bob_present?'var(--success)':'var(--warning)';
+    txt.textContent=d.status==='ok'?'Bob · '+d.default_mode:'degraded';
+  }catch{dot.style.background='var(--error)';txt.textContent='offline';}
+}
+checkHealth();setInterval(checkHealth,30000);
+
+function switchTab(n){
+  ['invoke','jobs','schedules'].forEach(t=>{
+    document.getElementById('tp-'+t).style.display='none';
+    document.getElementById('tb-'+t).classList.remove('sel');
+  });
+  const el=document.getElementById('tp-'+n);el.style.display='flex';el.style.flexDirection='column';
+  document.getElementById('tb-'+n).classList.add('sel');
+}
+function onEpChange(){
+  document.getElementById('run-opts').style.display=document.getElementById('ep').value==='run'?'block':'none';
+}
+function setOut(html,title){
+  document.getElementById('outBody').innerHTML=html;
+  document.getElementById('outTitle').textContent=title||'Output';
+}
+function clearOut(){
+  setOut('<div class="empty">Submit a request to see output here.</div>');
+  document.getElementById('meta').style.display='none';
+  document.getElementById('lb').style.display='none';
+}
+function copyOut(){
+  navigator.clipboard.writeText(document.getElementById('outBody').innerText)
+    .then(()=>toast('Copied','','ok'));
+}
+function tagFor(s){
+  const m={completed:'green',failed:'red',running:'blue',pending:'gray',timeout:'red'};
+  return '<span class="tag-'+(m[s]||'gray')+'">'+s+'</span>';
+}
+function updateMeta(j){
+  document.getElementById('meta').style.display='flex';
+  document.getElementById('mId').textContent=(j.id||'—').slice(0,12)+'…';
+  document.getElementById('mStatus').innerHTML=tagFor(j.status);
+  document.getElementById('mMode').textContent=j.mode||'—';
+  document.getElementById('mStart').textContent=j.started_at?new Date(j.started_at).toLocaleTimeString():'—';
+  const dur=(j.started_at&&j.finished_at)?((new Date(j.finished_at)-new Date(j.started_at))/1000).toFixed(1)+'s':'—';
+  document.getElementById('mDur').textContent=dur;
+}
+async function doSubmit(){
+  const ep=document.getElementById('ep').value;
+  const prompt=document.getElementById('prompt').value.trim();
+  if(!prompt){toast('Prompt is required','','err');return;}
+  const mode=document.getElementById('mode').value.trim()||undefined;
+  const workdir=document.getElementById('workdir').value.trim()||undefined;
+  const btn=document.getElementById('runBtn');const lb=document.getElementById('lb');
+  btn.disabled=true;lb.style.display='flex';
+  document.getElementById('lt').textContent='Running…';
+  const body={prompt,...(mode&&{mode}),...(workdir&&{workdir})};
+  try{
+    if(ep==='invoke'){
+      const d=await fetch('/invoke',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(r=>r.json());
+      if(d.ok===false&&!d.output)throw new Error(d.error||'exit '+d.exit_code);
+      setOut('<pre class="out-pre">'+esc(d.output||'')+'</pre>','/invoke — completed');
+      updateMeta(d);lb.style.display='none';
+    }else if(ep==='jobs'){
+      const d=await fetch('/jobs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(r=>r.json());
+      toast('Job started',d.id.slice(0,12),'ok');
+      document.getElementById('lt').textContent='Polling '+d.id.slice(0,8)+'…';
+      pollJob(d.id,lb);
+    }else if(ep==='run'){
+      const cc=document.getElementById('check_cmd').value.trim()||undefined;
+      Object.assign(body,{max_attempts:parseInt(document.getElementById('max_att').value)||3,timeout_s:parseInt(document.getElementById('timeout_s').value)||120,...(cc&&{check_cmd:cc})});
+      const d=await fetch('/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(r=>r.json());
+      toast('Run started',d.id.slice(0,12),'ok');
+      document.getElementById('lt').textContent='Polling '+d.id.slice(0,8)+'…';
+      pollJob(d.id,lb);
+    }else if(ep==='stream'){
+      btn.disabled=false;document.getElementById('lt').textContent='Streaming…';
+      await doStream(body);lb.style.display='none';
+    }
+  }catch(e){
+    setOut('<pre class="out-pre" style="color:var(--error)">'+esc(String(e))+'</pre>','Error');
+    lb.style.display='none';toast('Request failed',String(e),'err');
+  }
+  if(ep!=='stream')btn.disabled=false;
+}
+async function doStream(body){
+  setOut('<pre class="out-pre stream" id="sPre"></pre>','Streaming…');
+  const r=await fetch('/stream',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const reader=r.body.getReader();const dec=new TextDecoder();let buf='';
+  while(true){
+    const{done,value}=await reader.read();if(done)break;
+    buf+=dec.decode(value,{stream:true});
+    const lines=buf.split('\n');buf=lines.pop();
+    for(const ln of lines){
+      if(!ln.startsWith('data: '))continue;
+      try{const ev=JSON.parse(ln.slice(6));
+        if(ev.token)document.getElementById('sPre').textContent+=ev.token;
+        if(ev.output){document.getElementById('sPre').textContent=ev.output;document.getElementById('outTitle').textContent='Stream complete';}
+      }catch{document.getElementById('sPre').textContent+=ln.slice(6)+'\n';}
+      document.getElementById('sPre').parentElement.scrollTop=9e9;
+    }
+  }
+  document.getElementById('runBtn').disabled=false;
+}
+async function pollJob(id,lb){
+  let t=0;
+  const timer=setInterval(async()=>{
+    t+=3;
+    try{
+      const d=await fetch('/jobs/'+id).then(r=>r.json());
+      updateMeta(d);
+      if(['completed','failed','timeout'].includes(d.status)){
+        clearInterval(timer);
+        setOut('<pre class="out-pre">'+esc(d.output||d.error||'')+'</pre>',d.status==='completed'?'Job completed':'Job '+d.status);
+        if(lb)lb.style.display='none';loadJobs();
+      }else if(lb){document.getElementById('lt').textContent='Running… '+t+'s';}
+    }catch{clearInterval(timer);}
+    if(t>600)clearInterval(timer);
+  },3000);
+}
+async function loadJobs(){
+  try{
+    const raw=await fetch('/jobs').then(r=>r.json());
+    const jobs=raw.runs||raw;
+    const list=document.getElementById('jList');
+    if(!jobs.length){list.innerHTML='<div class="empty">No jobs yet</div>';return;}
+    list.innerHTML=[...jobs].reverse().map(j=>'<div class="job-row" onclick="selJob(\''+j.id+'\')"><div style="flex:1;min-width:0"><div class="job-p">'+esc((j.prompt||'').slice(0,52))+(j.prompt&&j.prompt.length>52?'…':'')+'</div><div style="display:flex;gap:6px;margin-top:4px;align-items:center">'+tagFor(j.status)+'<span class="job-t">'+(j.started_at?new Date(j.started_at).toLocaleTimeString():'')+'</span></div></div></div>').join('');
+  }catch(e){toast('Failed to load jobs',String(e),'err');}
+}
+async function loadById(){const id=document.getElementById('jid').value.trim();if(id)selJob(id);}
+async function selJob(id){
+  try{
+    const d=await fetch('/jobs/'+id).then(r=>r.json());
+    setOut('<pre class="out-pre">'+esc(d.output||d.error||'(no output yet)')+'</pre>','Job: '+id.slice(0,16)+'…');
+    updateMeta(d);
+    if(['running','pending'].includes(d.status))pollJob(id,null);
+  }catch{toast('Job not found',id,'err');}
+}
+async function loadScheds(){
+  try{
+    const ss=await fetch('/schedules').then(r=>r.json());
+    const list=document.getElementById('sList');
+    if(!ss.length){list.innerHTML='<div class="empty">No schedules</div>';return;}
+    list.innerHTML=ss.map(s=>'<div class="sched-row"><div style="flex:1;min-width:0"><div class="sched-name">'+esc(s.name||s.id)+'</div><div class="sched-cron">'+esc(s.cron||'')+'</div><div class="sched-sub">'+esc((s.prompt||'').slice(0,60))+((s.prompt||'').length>60?'…':'')+'</div></div><div style="display:flex;gap:4px"><button class="btn-g" onclick="runSched(\''+s.id+'\')">▶</button><button class="btn-d" onclick="delSched(\''+s.id+'\')">✕</button></div></div>').join('');
+  }catch(e){toast('Failed to load schedules',String(e),'err');}
+}
+async function createSched(){
+  const cron=document.getElementById('sc').value.trim(),prompt=document.getElementById('sp').value.trim();
+  if(!cron||!prompt){toast('Cron and Prompt required','','err');return;}
+  try{
+    const d=await fetch('/schedules',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+      name:document.getElementById('sn').value.trim()||undefined,cron,prompt,
+      mode:document.getElementById('sm').value.trim()||undefined,
+      slack_channel:document.getElementById('ss').value.trim()||undefined,
+    })}).then(r=>r.json());
+    toast('Schedule created',d.name||d.id,'ok');loadScheds();
+  }catch(e){toast('Failed',String(e),'err');}
+}
+async function delSched(id){
+  if(!confirm('Delete schedule '+id+'?'))return;
+  try{await fetch('/schedules/'+id,{method:'DELETE'});toast('Deleted','','ok');loadScheds();}
+  catch(e){toast('Delete failed',String(e),'err');}
+}
+async function runSched(id){
+  try{
+    const d=await fetch('/schedules/'+id+'/run',{method:'POST'}).then(r=>r.json());
+    toast('Triggered','job: '+(d.id||'').slice(0,8),'ok');
+    switchTab('jobs');setTimeout(loadJobs,1000);
+  }catch(e){toast('Failed',String(e),'err');}
+}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+</script>
+</body>
+</html>
