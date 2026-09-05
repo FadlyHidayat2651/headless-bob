@@ -415,6 +415,18 @@ def chat():
                 + "\n\n".join(parts)
             )
             ceo_out = invoke_bob_via_job(ceo_prompt, 'ceo-agent', timeout=300)
+
+            # Fallback: if CEO synthesis returned empty, build a plain summary ourselves
+            if not ceo_out.strip():
+                fallback_parts = []
+                if dev_out:
+                    fallback_parts.append(f"**Dev Agent** completed the task:\n\n{dev_out}")
+                elif ops_out:
+                    fallback_parts.append(f"**Ops Agent** completed the task:\n\n{ops_out}")
+                elif intel_out:
+                    fallback_parts.append(f"**Intel Agent** findings:\n\n{intel_out}")
+                ceo_out = "\n\n".join(fallback_parts) if fallback_parts else f"Task completed. Sub-agents processed: {message}"
+
             yield send('reply', ceo_out)
 
         except Exception as e:
@@ -423,6 +435,29 @@ def chat():
 
     return Response(stream_with_context(generate()), mimetype='text/event-stream',
                     headers={'Cache-Control':'no-cache','X-Accel-Buffering':'no'})
+
+@app.route('/dashboard/<path:filename>')
+def dashboard(filename):
+    """Serve any HTML file from /data/my-dashboard/"""
+    import os
+    from flask import send_from_directory
+    base_dir = '/data/my-dashboard'
+    safe = os.path.realpath(os.path.join(base_dir, filename))
+    if not safe.startswith(os.path.realpath(base_dir)):
+        return 'forbidden', 403
+    return send_from_directory(base_dir, filename)
+
+@app.route('/api/dashboards')
+def list_dashboards():
+    """List available dashboards in /data/my-dashboard/"""
+    import glob
+    files = glob.glob('/data/my-dashboard/*.html')
+    return jsonify([{
+        'name': os.path.basename(f),
+        'url': f'/dashboard/{os.path.basename(f)}',
+        'size': os.path.getsize(f),
+        'mtime': file_mtime(f),
+    } for f in sorted(files)])
 
 @app.route('/')
 def index():
