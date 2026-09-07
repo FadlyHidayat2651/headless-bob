@@ -1,0 +1,1537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>IBM Bob — Harness Agent Docs</title>
+<style>
+:root{--bg:#fff;--layer:#f4f4f4;--border:#e0e0e0;--t1:#161616;--t2:#525252;--t3:#a8a8a8;--ibm:#0f62fe;--ibm10:#edf5ff;--ibm20:#d0e2ff;--ibm30:#a6c8ff;--ibm70:#0043ce;--g10:#defbe6;--g40:#42be65;--g60:#198038;--p10:#f6f2ff;--p40:#be95ff;--p60:#8a3ffc;--p70:#6929c4;--t10:#d9fbfb;--t40:#08bdba;--t60:#007d79;--y10:#fcf4d6;--y30:#f1c21b;--r10:#fff1f1;--r50:#fa4d56;--mono:"IBM Plex Mono",monospace;--sans:"IBM Plex Sans",-apple-system,"Segoe UI",sans-serif;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--t1);font-family:var(--sans);font-size:14px;display:flex;min-height:100vh}
+/* ── Left sidebar ── */
+.sidebar{width:232px;min-width:232px;background:#161616;position:fixed;left:0;top:0;bottom:0;overflow-y:auto;z-index:99;display:flex;flex-direction:column}
+.brand{display:flex;align-items:center;gap:10px;padding:16px 16px 14px;border-bottom:1px solid #393939;flex-shrink:0}
+.brand span{font-size:13px;color:#f4f4f4;line-height:1.3}
+.tabs{display:flex;flex-direction:column;padding:8px 0;flex:1}
+.tab{width:100%;padding:9px 16px;display:flex;align-items:flex-start;font-size:11px;color:#a8a8a8;cursor:pointer;border:none;background:none;font-family:var(--sans);border-left:3px solid transparent;text-align:left;line-height:1.4;white-space:normal}
+.tab:hover{color:#f4f4f4;background:#262626}
+.tab.on{color:#f4f4f4;background:#262626;border-left-color:#a6c8ff}
+.tab .tnum{font-size:9px;font-family:var(--mono);color:#6f6f6f;display:block;margin-bottom:1px}
+.tab.on .tnum{color:#a6c8ff}
+/* ── Content area ── */
+.content{margin-left:232px;flex:1;min-width:0}
+.page{display:none;max-width:860px;margin:0 auto;padding:44px 32px 80px}
+.page.on{display:block}
+.hero{background:var(--ibm10);border-left:4px solid var(--ibm);padding:24px 28px;margin-bottom:36px}
+.hero-tag{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.2px;color:var(--ibm);margin-bottom:6px}
+.hero h1{font-size:26px;font-weight:300;color:var(--ibm70);line-height:1.25;margin-bottom:10px}
+.hero p{font-size:13px;color:var(--t2);line-height:1.7}
+h2{font-size:18px;font-weight:600;margin:36px 0 10px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+h3{font-size:14px;font-weight:600;color:var(--ibm70);margin:24px 0 8px}
+h4{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;margin:16px 0 6px;color:var(--t2)}
+p{margin-bottom:12px;color:var(--t2);line-height:1.7}
+ul,ol{padding-left:18px;margin-bottom:12px}
+li{margin-bottom:5px;color:var(--t2);line-height:1.6}
+code{font-family:var(--mono);font-size:12px;background:var(--layer);padding:1px 5px;border-radius:2px;color:var(--ibm70)}
+pre{background:#161616;color:#f4f4f4;padding:18px 20px;border-radius:2px;overflow-x:auto;margin:14px 0;font-family:var(--mono);font-size:12px;line-height:1.75}
+.callout{padding:14px 18px;border-radius:2px;margin:18px 0;display:flex;gap:10px;align-items:flex-start}
+.callout.info{background:var(--ibm10);border-left:4px solid var(--ibm)}
+.callout.tip{background:var(--g10);border-left:4px solid var(--g40)}
+.callout.warn{background:var(--y10);border-left:4px solid var(--y30)}
+.callout p{margin:0;font-size:12px;line-height:1.6}
+.ci{font-size:15px;flex-shrink:0;margin-top:1px}
+.grid{display:grid;gap:14px;margin:16px 0}
+.g2{grid-template-columns:1fr 1fr}
+.g3{grid-template-columns:repeat(3,1fr)}
+.card{background:var(--layer);border:1px solid var(--border);border-radius:2px;padding:14px 16px}
+.card.gb{border-left:3px solid var(--g40)}
+.card.ib{border-left:3px solid var(--ibm)}
+.card-icon{font-size:18px;margin-bottom:6px}
+.card-title{font-size:12px;font-weight:600;margin-bottom:5px}
+.card-body{font-size:11px;color:var(--t2);line-height:1.65}
+.arch{background:var(--layer);border:1px solid var(--border);border-radius:2px;padding:24px;margin:20px 0;display:flex;flex-direction:column;align-items:center;gap:0}
+.abox{border-radius:2px;padding:8px 16px;text-align:center;font-size:11px;font-weight:600;min-width:130px;line-height:1.4}
+.abox.ceo{background:var(--ibm10);border:2px solid var(--ibm);color:var(--ibm70)}
+.abox.h{background:var(--p10);border:2px solid var(--p60);color:var(--p70)}
+.abox.ag{background:var(--g10);border:1px solid var(--g40);color:var(--g60)}
+.abox.x{background:var(--layer);border:1px dashed var(--border);color:var(--t2)}
+.arow{display:flex;gap:10px;align-items:center;justify-content:center}
+.arr{color:var(--t3);font-size:16px}
+.vl{width:2px;height:18px;background:var(--ibm);margin:0 auto}
+.vl.g{background:var(--border)}
+.al{font-size:10px;color:var(--t3);font-family:var(--mono);margin:2px 0 3px;text-align:center}
+table{width:100%;border-collapse:collapse;margin:14px 0;font-size:12px}
+th{background:var(--layer);padding:7px 10px;text-align:left;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--t2);border-bottom:2px solid var(--border)}
+td{padding:9px 10px;border-bottom:1px solid var(--border);color:var(--t2);vertical-align:top}
+td:first-child{font-family:var(--mono);font-size:11px;color:var(--ibm)}
+tr:last-child td{border-bottom:none}
+table.cmp th{background:#161616;color:#f4f4f4}
+table.cmp td:first-child{font-family:var(--sans);color:var(--t1);font-weight:500}
+.steps{margin:18px 0}
+.step{display:flex;gap:14px;margin-bottom:18px;align-items:flex-start}
+.snum{width:26px;height:26px;border-radius:50%;background:var(--ibm);color:#fff;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
+.stitle{font-size:13px;font-weight:600;margin-bottom:3px}
+.sdesc{font-size:12px;color:var(--t2);line-height:1.6}
+.tl{margin:18px 0;padding-left:20px;border-left:2px solid var(--ibm)}
+.tli{position:relative;padding:0 0 18px 18px}
+.tli::before{content:"";position:absolute;left:-7px;top:4px;width:12px;height:12px;border-radius:50%;background:var(--ibm);border:2px solid #fff}
+.tlt{font-size:10px;font-family:var(--mono);color:var(--ibm);margin-bottom:2px;font-weight:600}
+.tlh{font-size:13px;font-weight:600;margin-bottom:3px}
+.tld{font-size:12px;color:var(--t2);line-height:1.6}
+.pill{display:inline-block;font-size:10px;padding:1px 7px;border-radius:2px;font-family:var(--mono)}
+.pb{background:var(--ibm10);border:1px solid var(--ibm20);color:var(--ibm70)}
+.pg{background:var(--g10);border:1px solid #a7f0ba;color:var(--g60)}
+.pp{background:var(--p10);border:1px solid var(--p40);color:var(--p70)}
+.pz{background:var(--layer);border:1px solid var(--border);color:var(--t2)}
+.pfooter{margin-top:50px;padding-top:16px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:11px;color:var(--t3)}
+.pfooter button{background:none;border:none;color:var(--ibm);cursor:pointer;font-family:var(--sans);font-size:11px}
+</style>
+</head>
+<body>
+<nav class="sidebar">
+  <div class="brand">
+    <svg width="20" height="20" viewBox="0 0 32 32" style="flex-shrink:0"><rect width="32" height="32" fill="#0F62FE"/><text x="4" y="22" font-family="IBM Plex Sans" font-weight="700" font-size="13" fill="white">IBM</text></svg>
+    <span><strong>Bob</strong><br>Harness Agent Docs</span>
+  </div>
+  <div class="tabs">
+    <button class="tab on" onclick="show(0)"><span class="tnum">00</span>Deploy Bob 24/7 on a VM</button>
+    <button class="tab" onclick="show(1)"><span class="tnum">01</span>What is a Harness Agent</button>
+    <button class="tab" onclick="show(2)"><span class="tnum">02</span>Bob as a Harness Agent</button>
+    <button class="tab" onclick="show(3)"><span class="tnum">03</span>The HQ System We Built</button>
+    <button class="tab" onclick="show(4)"><span class="tnum">04</span>Hands-on Tutorial</button>
+    <button class="tab" onclick="show(5)"><span class="tnum">05</span>OpenHarness — Compete or Collaborate?</button>
+    <button class="tab" onclick="show(6)"><span class="tnum">06</span>Cron Job Examples</button>
+    <button class="tab" onclick="show(7)"><span class="tnum">07</span>Obsidian Vault — Persistent Memory</button>
+    <button class="tab" onclick="show(8)"><span class="tnum">08</span>Agent Loop × IBM SDLC</button>
+    <button class="tab" onclick="show(9)"><span class="tnum">09</span>Agent Rerouting & Parallel Execution</button>
+    <button class="tab" onclick="show(10)"><span class="tnum">10</span>What if Harness On-Prem?</button>
+  </div>
+</nav>
+<div class="content">
+
+
+<!-- PAGE 0 -->
+<div class="page on" id="p0">
+<div class="hero"><div class="hero-tag">Chapter 00</div><h1>Deploy IBM Bob<br><strong>24/7 on a VM</strong></h1><p>How to turn IBM Bob from a developer tool you open in a terminal into a permanently-running server that accepts API calls, fires scheduled agents, and never sleeps &mdash; as long as the VM is alive.</p></div>
+
+<h2>The Core Idea</h2>
+<p>By default, IBM Bob is an <strong>interactive</strong> tool: you open a terminal, type a prompt, read the reply, close it. Everything stops the moment you close the session. That model works for individual developers, but it means <em>nothing runs unless you are actively at a keyboard.</em></p>
+<p>The shift to a <strong>headless, always-on setup</strong> changes that completely:</p>
+
+<div class="grid g2">
+<div class="card" style="border-left:3px solid var(--r50)">
+  <div class="card-title" style="color:#a2191f">Interactive Bob (default)</div>
+  <div class="card-body">
+    &bull; Lives on your laptop<br>
+    &bull; Runs only when terminal is open<br>
+    &bull; One conversation at a time<br>
+    &bull; Output disappears when session closes<br>
+    &bull; No external system can call it<br>
+    &bull; Agents stop when you go to sleep
+  </div>
+</div>
+<div class="card" style="border-left:3px solid var(--g40)">
+  <div class="card-title" style="color:var(--g60)">Headless Bob on a VM (this setup)</div>
+  <div class="card-body">
+    &bull; Lives on a cloud VM that never turns off<br>
+    &bull; Runs 24/7 as a systemd service<br>
+    &bull; Accepts API calls from anywhere<br>
+    &bull; Output written to files + Slack + SSE<br>
+    &bull; Any system can invoke it via HTTP<br>
+    &bull; Agents fire on schedule while you sleep
+  </div>
+</div>
+</div>
+
+<div class="callout tip"><div class="ci">&#x26A1;</div><p><strong>One sentence:</strong> Deploy Bob on a VM + wrap it in a FastAPI server + register it as a systemd service = Bob is now an API endpoint that runs forever and can be called by anything, at any time, from anywhere.</p></div>
+
+<h2>Architecture: What&apos;s Running on the VM</h2>
+<div class="arch">
+  <div class="arow" style="gap:6px">
+    <div class="abox x" style="min-width:80px;font-size:10px">Any caller<br><small>browser / curl / cron / Slack</small></div>
+    <div class="arr">&#x2192;</div>
+    <div class="abox h" style="min-width:120px">Bob Harness<br><small>FastAPI :44285</small><br><small style="color:var(--p60);font-size:9px">systemd &bull; always-on</small></div>
+    <div class="arr">&#x2192;</div>
+    <div class="abox ceo" style="min-width:100px">IBM Bob<br><small>bob run --mode X</small><br><small style="color:var(--ibm);font-size:9px">subprocess</small></div>
+  </div>
+  <div class="vl"></div>
+  <div class="al">same VM &mdash; Bob binary installed, BOB_API_KEY in environment</div>
+  <div class="arow" style="gap:12px">
+    <div class="abox x" style="font-size:10px">HQ Dashboard<br><small>Flask :44283</small></div>
+    <div class="abox x" style="font-size:10px">Agent Reports<br><small>/data/company/</small></div>
+    <div class="abox x" style="font-size:10px">Slack Webhook<br><small>outbound push</small></div>
+  </div>
+</div>
+
+<h2>The 4 Systemd Services</h2>
+<table><thead><tr><th>Service</th><th>Port</th><th>What it does</th><th>Status</th></tr></thead><tbody>
+<tr><td>bob-harness.service</td><td>:44285</td><td>FastAPI server &mdash; /jobs, /schedules, /invoke, SSE. The main harness API. Routes prompts to <code>bob run</code> subprocesses.</td><td><span class="pill pg">active</span></td></tr>
+<tr><td>bob-hq.service</td><td>:44283</td><td>Flask HQ dashboard &mdash; gamified orchestration UI, SSE chat, agent cards, live delegation visualiser.</td><td><span class="pill pg">active</span></td></tr>
+<tr><td>bob-terminal.service</td><td>:44290</td><td>Bloomberg-style market dashboard &mdash; Node.js/Express, shows agent output in real-time terminal view.</td><td><span class="pill pg">active</span></td></tr>
+<tr><td>bob.service</td><td>&mdash;</td><td>Bob daemon &mdash; keeps the Bob runtime warm. Ensures bob binary is available for subprocess invocations.</td><td><span class="pill pg">active</span></td></tr>
+</tbody></table>
+
+<h2>Why a VM and Not a Laptop?</h2>
+<div class="grid g3">
+<div class="card">
+  <div class="card-icon">&#x1F550;</div>
+  <div class="card-title">Always on</div>
+  <div class="card-body">VM runs 24/7. Agents fire at 06:00, 07:00, 08:00 UTC regardless of whether you&apos;re awake, at your desk, or on a different continent.</div>
+</div>
+<div class="card">
+  <div class="card-icon">&#x1F310;</div>
+  <div class="card-title">Reachable from anywhere</div>
+  <div class="card-body">Public IP <code>20.89.63.64</code>. Any system &mdash; Slack, CI/CD pipeline, a mobile browser, another VM &mdash; can hit <code>:44285/jobs</code> and invoke a Bob agent.</div>
+</div>
+<div class="card">
+  <div class="card-icon">&#x1F4BE;</div>
+  <div class="card-title">Persistent storage</div>
+  <div class="card-body">1TB disk at <code>/data/</code>. Agent reports, dashboards, logs, vault notes accumulate over time. Nothing is lost between runs.</div>
+</div>
+<div class="card">
+  <div class="card-icon">&#x1F504;</div>
+  <div class="card-title">Auto-restart on failure</div>
+  <div class="card-body">systemd <code>Restart=always</code> means if the Harness server crashes, it comes back automatically within seconds. No manual intervention needed.</div>
+</div>
+<div class="card">
+  <div class="card-icon">&#x1F4CA;</div>
+  <div class="card-title">Concurrent agent jobs</div>
+  <div class="card-body">Multiple Bob processes can run in parallel (controlled by <code>BOB_MAX_JOBS=200</code>). The CEO agent delegates to Intel + Ops simultaneously and waits for both.</div>
+</div>
+<div class="card">
+  <div class="card-icon">&#x1F512;</div>
+  <div class="card-title">Environment isolation</div>
+  <div class="card-body">API keys, MCP configs, and agent personas live on the VM &mdash; not on your laptop. The VM is the source of truth; your laptop just sends HTTP requests.</div>
+</div>
+</div>
+
+<h2>Setup in 5 Steps</h2>
+<div class="steps">
+<div class="step"><div class="snum">1</div><div><div class="stitle">Provision a VM with a persistent disk</div><div class="sdesc">Any cloud VM works: Azure, AWS, GCP. Minimum 8 vCPU, 16GB RAM, 100GB disk. We use <strong>Azure Standard_D16s_v5</strong> with a 1TB secondary disk mounted at <code>/data/</code>. The VM must have a public IP and open ports 44283, 44285, 44290.</div></div></div>
+<div class="step"><div class="snum">2</div><div><div class="stitle">Install Bob and set your API key</div><div class="sdesc">
+<code>npm install -g @ibm/bob</code><br>
+Then set the key permanently in the environment:<br>
+<code>echo 'export BOB_API_KEY=your_key_here' &gt;&gt; ~/.bashrc &amp;&amp; source ~/.bashrc</code><br>
+Verify: <code>bob --version</code> &rarr; should print <code>2.0.0</code></div></div></div>
+<div class="step"><div class="snum">3</div><div><div class="stitle">Define your custom modes (agent personas)</div><div class="sdesc">Create <code>~/.bob/settings/custom_modes.yaml</code> with your harness agents. Each mode gets a <code>slug</code>, <code>roleDefinition</code>, and <code>groups: [read,edit,execute,mcp,skill,todo,subtask,subagent,mode]</code>. These are the identities Bob assumes when invoked with <code>bob run --mode &lt;slug&gt;</code>.</div></div></div>
+<div class="step"><div class="snum">4</div><div><div class="stitle">Deploy the Harness FastAPI server as a systemd service</div><div class="sdesc">The Harness server (<code>server.py</code>) wraps Bob in a REST API. Register it as a systemd unit with <code>Restart=always</code> and <code>EnvironmentFile</code> pointing to your <code>.env</code>. Enable it: <code>systemctl enable --now bob-harness</code>. Now Bob is reachable at <code>:44285/jobs</code> forever.</div></div></div>
+<div class="step"><div class="snum">5</div><div><div class="stitle">Register cron schedules and let it run</div><div class="sdesc"><code>POST /schedules</code> with your agent tasks and cron expressions. From this point forward, Bob fires automatically on schedule, writes reports to <code>/data/company/</code>, pushes to Slack, and updates dashboards &mdash; with zero human intervention required.</div></div></div>
+</div>
+
+<h2>The &quot;Always-On&quot; Insight</h2>
+<div class="callout info"><div class="ci">&#x1F4A1;</div><p>The real power of this setup is not any single feature &mdash; it&apos;s the combination of <strong>persistent process + HTTP interface + scheduled triggers</strong>. Bob stops being &quot;an AI you talk to&quot; and becomes &quot;an AI that works for you&quot;. It monitors infrastructure, researches competitors, writes board reports, and pushes updates to Slack &mdash; all while you&apos;re doing something else. The VM is the always-on brain; the Harness is the nervous system; Bob is the intelligence.</p></div>
+
+<h2>What&apos;s Running Right Now</h2>
+<pre># Check all 4 services on the live VM
+ssh itzuser@20.89.63.64 &quot;systemctl is-active bob.service bob-harness.service bob-hq.service bob-terminal.service&quot;
+# active
+# active
+# active
+# active
+
+# Hit the live Harness API
+curl http://20.89.63.64:44285/schedules | python3 -m json.tool
+# Returns 4 live cron schedules running Intel/Ops/Dev/CEO agents daily</pre>
+
+<div class="pfooter"><span>IBM Bob &mdash; Harness Agent Docs</span><span>Page 1 of 11 &nbsp;&middot;&nbsp; <button onclick="show(1)">Next: What is a Harness Agent? &rarr;</button></span></div>
+</div>
+
+<!-- PAGE 1 -->
+<div class="page" id="p1">
+<div class="hero"><div class="hero-tag">Chapter 01</div><h1>What is a<br><strong>Harness Agent?</strong></h1><p>A foundational concept: what it means to run an AI agent in a harness, why it matters for production systems, and how it differs from interactive use.</p></div>
+<h2>Definition</h2>
+<p>A <strong>Harness Agent</strong> is an AI language model invoked <em>programmatically</em> — without a human at a keyboard — whose lifecycle (input, execution, output, retry, delivery) is controlled by surrounding orchestration code called the <em>harness</em>.</p>
+<div class="grid g2">
+<div class="card"><div class="card-icon">&#x1F916;</div><div class="card-title">The Agent</div><div class="card-body">The AI model that reasons, calls tools, and produces output. In our case: IBM Bob running a specific <code>--mode</code>. Stateless between invocations.</div></div>
+<div class="card"><div class="card-icon">&#x2699;&#xFE0F;</div><div class="card-title">The Harness</div><div class="card-body">Orchestration layer managing the agent lifecycle: queues jobs, passes prompts, collects output, handles retries, routes results to downstream systems.</div></div>
+<div class="card"><div class="card-icon">&#x1F501;</div><div class="card-title">Non-interactive execution</div><div class="card-body">Agent is called via CLI (<code>bob run "prompt"</code>) or REST API. No human approves tool calls at runtime — all permissions are pre-granted by the harness.</div></div>
+<div class="card"><div class="card-icon">&#x1F4CB;</div><div class="card-title">Structured output</div><div class="card-body">The harness parses agent output into structured data (JSON, files, DB records) that other systems consume — not just raw text for a human to read.</div></div>
+</div>
+<h2>Why Harness — not just Chat?</h2>
+<table class="cmp"><thead><tr><th>Dimension</th><th>Interactive Chat</th><th>Harness Agent</th></tr></thead><tbody>
+<tr><td>Trigger</td><td>Human types a message</td><td>API call, schedule, event, webhook</td></tr>
+<tr><td>Tool approval</td><td>Prompted per tool call</td><td>Pre-approved — runs unattended</td></tr>
+<tr><td>Output destination</td><td>Chat bubble</td><td>File, database, Slack, dashboard, SSE stream</td></tr>
+<tr><td>Scale</td><td>One conversation at a time</td><td>Many parallel jobs, queued and throttled</td></tr>
+<tr><td>Retry logic</td><td>User re-prompts manually</td><td>Harness retries automatically on failure</td></tr>
+<tr><td>Observability</td><td>Human reads the screen</td><td>Logs, job status API, structured output</td></tr>
+</tbody></table>
+<h2>The Harness Pattern</h2>
+<p>The harness sits between any external trigger and the Bob agent. Triggers can be schedules, API calls, or CI/CD pipeline steps. Outputs can be files, Slack messages, dashboards &mdash; or direct deployments to GitHub and OpenShift.</p>
+<div class="arch">
+<div class="arow"><div class="abox x">Trigger<br><small>schedule/event/API</small></div><div class="arr">&#x2192;</div><div class="abox h">Harness<br><small>queue &middot; route &middot; retry</small></div><div class="arr">&#x2192;</div><div class="abox ceo">Agent<br><small>bob run --mode X</small></div><div class="arr">&#x2192;</div><div class="abox x">Output<br><small>file/Slack/DB/SSE</small></div></div>
+<div class="vl g"></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;width:100%;margin-top:4px">
+  <div>
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--t2);margin-bottom:10px;text-align:center">Trigger examples</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="background:#f4f4f4;border:1px solid #e0e0e0;border-left:3px solid var(--ibm);border-radius:2px;padding:9px 12px;font-size:11px">
+        <div style="font-weight:700;color:var(--ibm);margin-bottom:2px">&#x23F1; Cron schedule</div>
+        <div style="color:var(--t2)">Daily at 07:00 UTC &mdash; fires intel-agent automatically via Harness <code>/schedules</code></div>
+      </div>
+      <div style="background:#f4f4f4;border:1px solid #e0e0e0;border-left:3px solid #6e40c9;border-radius:2px;padding:9px 12px;font-size:11px">
+        <div style="font-weight:700;color:#6e40c9;margin-bottom:2px">&#x1F4E6; GitHub Actions</div>
+        <div style="color:var(--t2)">On every <code>push</code> or <code>pull_request</code> &mdash; GitHub Actions calls <code>POST /jobs</code> to trigger dev-agent code review before merge</div>
+      </div>
+      <div style="background:#f4f4f4;border:1px solid #e0e0e0;border-left:3px solid #ee0000;border-radius:2px;padding:9px 12px;font-size:11px">
+        <div style="font-weight:700;color:#cc0000;margin-bottom:2px">&#x1F504; CI/CD Pipeline webhook</div>
+        <div style="color:var(--t2)">Jenkins / Tekton pipeline step calls Harness API &mdash; Bob runs security scan, test validation, or release notes generation mid-pipeline</div>
+      </div>
+      <div style="background:#f4f4f4;border:1px solid #e0e0e0;border-left:3px solid var(--g40);border-radius:2px;padding:9px 12px;font-size:11px">
+        <div style="font-weight:700;color:var(--g60);margin-bottom:2px">&#x1F4AC; Slack / API call</div>
+        <div style="color:var(--t2)">User sends a message to HQ or calls <code>POST /jobs</code> directly from any system &mdash; instant on-demand agent invocation</div>
+      </div>
+      <div style="background:#f3f0ff;border:1px solid #d4bbff;border-left:3px solid #8a3ffc;border-radius:2px;padding:9px 12px;font-size:11px">
+        <div style="font-weight:700;color:#6929c4;margin-bottom:2px">&#x1F4DA; Memory context (Obsidian)</div>
+        <div style="color:var(--t2)">Before execution, harness injects prior context from <strong>Obsidian vault</strong> &mdash; <code>MEMORY.md</code>, past daily logs, insight notes. Agent starts with accumulated knowledge, not a blank slate</div>
+      </div>
+    </div>
+  </div>
+  <div>
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--t2);margin-bottom:10px;text-align:center">Output examples</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="background:#f4f4f4;border:1px solid #e0e0e0;border-left:3px solid #6e40c9;border-radius:2px;padding:9px 12px;font-size:11px">
+        <div style="font-weight:700;color:#6e40c9;margin-bottom:2px">&#x1F4E4; GitHub PR / commit</div>
+        <div style="color:var(--t2)">dev-agent writes code, then uses <code>git commit &amp;&amp; git push</code> via shell tool to open a PR automatically &mdash; no human touch required</div>
+      </div>
+      <div style="background:#f4f4f4;border:1px solid #e0e0e0;border-left:3px solid #ee0000;border-radius:2px;padding:9px 12px;font-size:11px">
+        <div style="font-weight:700;color:#cc0000;margin-bottom:2px">&#x1F680; OpenShift deployment</div>
+        <div style="color:var(--t2)">ops-agent runs <code>oc apply -f manifest.yaml</code> or triggers an OpenShift pipeline via <code>oc start-build</code> &mdash; Bob deploys to the cluster directly</div>
+      </div>
+      <div style="background:#f4f4f4;border:1px solid #e0e0e0;border-left:3px solid var(--ibm);border-radius:2px;padding:9px 12px;font-size:11px">
+        <div style="font-weight:700;color:var(--ibm);margin-bottom:2px">&#x1F4CA; Dashboard / Slack</div>
+        <div style="color:var(--t2)">Results pushed to HQ dashboard via SSE, Slack channel via webhook, and written to <code>/data/company/</code> as persistent reports</div>
+      </div>
+      <div style="background:#f4f4f4;border:1px solid #e0e0e0;border-left:3px solid var(--t40);border-radius:2px;padding:9px 12px;font-size:11px">
+        <div style="font-weight:700;color:var(--t60);margin-bottom:2px">&#x1F5C4;&#xFE0F; DB / file / API</div>
+        <div style="color:var(--t2)">Structured output to Postgres, MongoDB, S3-compatible storage, or any downstream REST API &mdash; harness routes result to the right sink</div>
+      </div>
+      <div style="background:#f3f0ff;border:1px solid #d4bbff;border-left:3px solid #8a3ffc;border-radius:2px;padding:9px 12px;font-size:11px">
+        <div style="font-weight:700;color:#6929c4;margin-bottom:2px">&#x1F9E0; Memory Management</div>
+        <div style="color:var(--t2)">After every run, agent writes findings to <strong>Obsidian vault</strong> via MCP &mdash; <code>MEMORY.md</code> rolling summary, daily logs, insight notes. Next run loads this context first, so agents get smarter over time without any infrastructure changes</div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+<div class="callout info"><div class="ci">&#x1F4A1;</div><p><strong>Key insight:</strong> The Harness is the universal adapter. Any system that can send an HTTP request can trigger a Bob agent &mdash; including GitHub Actions and CI/CD pipelines. Any system that can receive an HTTP call, a git push, or an <code>oc</code> command can be a target &mdash; including OpenShift clusters. And every agent run feeds back into <strong>memory management via Obsidian MCP</strong>, so the loop compounds: each run makes the next one smarter.</p></div>
+<div class="steps">
+<div class="step"><div class="snum">1</div><div><div class="stitle">Trigger</div><div class="sdesc">Something external initiates the agent: a cron schedule, an API call, a Slack message, a CI pipeline step, or a user action on a dashboard.</div></div></div>
+<div class="step"><div class="snum">2</div><div><div class="stitle">Harness receives and queues</div><div class="sdesc">Validates the request, creates a job record, queues it. Manages concurrency and timeouts. Caller gets a job ID immediately and polls for status.</div></div></div>
+<div class="step"><div class="snum">3</div><div><div class="stitle">Agent executes</div><div class="sdesc">Harness spawns <code>bob run --mode &lt;mode&gt; "prompt"</code> as a subprocess. Bob runs headlessly with no human approval needed.</div></div></div>
+<div class="step"><div class="snum">4</div><div><div class="stitle">Harness delivers result</div><div class="sdesc">Captures stdout, extracts the reply, updates job status, and delivers to files, Slack, dashboards, or SSE streams.</div></div></div>
+</div>
+<div class="callout info"><div class="ci">&#x1F4A1;</div><p><strong>The term "harness" comes from software testing</strong> — a test harness is scaffolding that runs code automatically. A harness agent applies the same idea to AI: the harness runs the AI automatically, captures its output, and delivers the result.</p></div>
+<div class="pfooter"><span>IBM Bob &mdash; Harness Agent Docs</span><span>Page 2 of 11 &nbsp;&middot;&nbsp; <button onclick="show(2)">Next: Bob as a Harness Agent &rarr;</button></span></div>
+</div>
+
+<!-- PAGE 2 -->
+<div class="page" id="p2">
+<div class="hero"><div class="hero-tag">Chapter 02</div><h1>Positioning <strong>IBM Bob</strong><br>as a Harness Agent</h1><p>How Bob's non-interactive CLI, custom modes, and tool system make it an ideal harness agent — and exactly where the harness boundary sits.</p></div>
+<h2>Bob's Non-Interactive Mode</h2>
+<p>IBM Bob ships with a <code>bob run</code> subcommand that is the foundation of every harness integration:</p>
+<pre># Basic prompt
+bob run "Summarise /data/company/intel-report.md"
+
+# With a specific mode
+bob run --mode intel-agent "Research IBM AI coding competitors"
+
+# Structured JSON output -- ideal for scripting
+bob run --format json --mode ops-agent "Check system health" &gt; result.json
+
+# NDJSON stream -- process events in real time
+bob run --format stream-json --mode dev-agent "Audit the codebase" \
+  | grep '"type":"result"' | jq '.last_message'
+
+# Cap cost and turns for automated workflows
+bob run --max-cost 0.50 --max-turns 20 --mode ceo-agent "Generate board report"</pre>
+<div class="callout tip"><div class="ci">&#x2705;</div><p><strong>All tools are pre-approved</strong> when running non-interactively with <code>bob run</code>. Bob reads files, executes shell commands, calls MCPs, and writes output without pausing for permission.</p></div>
+<h2>Custom Modes as Agent Personas</h2>
+<div class="grid g2">
+<div class="card"><div class="card-title"><code>roleDefinition</code></div><div class="card-body">System prompt injected before every run. Defines who the agent is, what it knows, how it behaves. Encodes domain expertise.</div></div>
+<div class="card"><div class="card-title"><code>groups</code></div><div class="card-body">Tool permission groups: <code>read</code>, <code>edit</code>, <code>execute</code>, <code>mcp</code>, <code>skill</code>, <code>todo</code>, <code>subtask</code>, <code>subagent</code>, <code>mode</code>. A harness agent gets all nine.</div></div>
+<div class="card"><div class="card-title"><code>whenToUse</code></div><div class="card-body">Short user-facing description shown in dashboard UIs and used by CEO agent routing logic.</div></div>
+<div class="card"><div class="card-title"><code>slug</code></div><div class="card-body">Identifier passed to <code>bob run --mode &lt;slug&gt;</code> and to the harness REST API as the <code>mode</code> field.</div></div>
+</div>
+<pre># ~/.bob/settings/custom_modes.yaml
+customModes:
+  - slug: intel-agent
+    name: Intel Agent
+    whenToUse: "Web research, competitor scraping, market intelligence, live news."
+    groups: [read, edit, execute, mcp, skill, todo, subtask, subagent, mode]
+    roleDefinition: |
+      You are the Intel Agent -- a specialized market intelligence operative
+      with live internet access via Firecrawl MCP.
+      Always write findings to /data/company/intel-report.md</pre>
+<h2>Harness Boundary</h2>
+<div class="arch">
+<div class="arow" style="width:100%;gap:0">
+<div style="flex:1;background:var(--ibm10);border:1px solid var(--ibm20);border-radius:2px;padding:14px;margin-right:8px">
+<div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--ibm);margin-bottom:8px">Harness (your code)</div>
+<div style="font-size:11px;color:var(--t2);line-height:2">&#x2022; Trigger logic (cron, API, event)<br>&#x2022; Job queue &amp; status tracking<br>&#x2022; Prompt construction<br>&#x2022; Retry / error loop logic<br>&#x2022; Output parsing &amp; delivery<br>&#x2022; Observability &amp; logging</div>
+</div>
+<div style="display:flex;align-items:center;font-size:18px;color:var(--ibm);padding:0 8px">&#x2192;</div>
+<div style="flex:1;background:var(--g10);border:2px solid var(--g40);border-radius:2px;padding:14px">
+<div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--g60);margin-bottom:8px">IBM Bob (the agent)</div>
+<div style="font-size:11px;color:var(--t2);line-height:2">&#x2022; Receives prompt via stdin/arg<br>&#x2022; Applies mode roleDefinition<br>&#x2022; Calls tools (file, shell, MCP)<br>&#x2022; Reasons across multiple turns<br>&#x2022; Writes output to stdout<br>&#x2022; Exits with a return code</div>
+</div>
+</div>
+</div>
+<h2>Output Parsing &mdash; Critical Detail</h2>
+<pre># Bob stdout structure (pretty mode)
+------------------------------------------------  &lt;-- U+2500 box-drawing char (NOT ASCII -)
+Assistant (1) 2026-09-05 17:47:00 UTC (+32s)
+------------------------------------------------
+
+  [actual reply -- may contain markdown, ---, tables, code blocks]
+
+------------------------------------------------  &lt;-- end of reply
+Task Summary
+Total Cost: 0.101</pre>
+<div class="callout warn"><div class="ci">&#x26A0;&#xFE0F;</div><p><strong>Critical:</strong> Bob separators use Unicode U+2500 box-drawing character, not ASCII hyphen. Agent replies often contain markdown <code>---</code> dividers. If your parser matches on any hyphen-run it will truncate replies mid-content. Only break on the U+2500 character. Use <code>--format json</code> to skip parsing entirely.</p></div>
+<h2>Loop Engineering &mdash; Self-Healing</h2>
+<pre>def run_agent_with_retry(prompt, mode, max_retries=2):
+    for attempt in range(max_retries + 1):
+        job = start_job(prompt if attempt == 0 else retry_prompt, mode)
+        status, output = poll_job(job["id"])
+        if status == "completed" and output.strip():
+            return output  # success
+        retry_prompt = (
+            f"SELF-HEALING RETRY (attempt {attempt+1}):\n"
+            f"Previous run failed: {output[:400]}\n\n"
+            f"Original task: {prompt}\n\nAnalyse and complete the task."
+        )</pre>
+<div class="pfooter"><span>IBM Bob &mdash; Harness Agent Docs</span><span>Page 3 of 11 &nbsp;&middot;&nbsp; <button onclick="show(3)">Next: The HQ System &rarr;</button></span></div>
+</div>
+
+<!-- PAGE 3 -->
+<div class="page" id="p3">
+<div class="hero"><div class="hero-tag">Chapter 03</div><h1>The Headless Bob<br><strong>HQ System</strong></h1><p>A complete multi-agent company simulator on Azure RHEL &mdash; 4 Bob harness agents, a gamified orchestration dashboard, Slack integration, and automated daily scheduling.</p></div>
+<h2>System Overview</h2>
+<div class="arch">
+<div class="arow"><div class="abox x" style="min-width:90px">Browser / Slack</div><div class="arr">&#x2192;</div><div class="abox h">Bob Harness<br><small>FastAPI :44285</small></div><div class="arr">&#x2192;</div><div class="abox ceo">CEO Agent<br><small>ceo-agent</small></div></div>
+<div class="vl"></div><div class="al">delegates via POST /jobs</div>
+<div class="arow" style="gap:16px">
+<div class="abox ag">Intel Agent<br><small>intel-agent</small></div>
+<div class="abox ag" style="border-color:#f1c21b;background:#fcf4d6;color:#b28600">Ops Agent<br><small>ops-agent</small></div>
+<div class="abox ag" style="border-color:#be95ff;background:#f6f2ff;color:#6929c4">Dev Agent<br><small>dev-agent</small></div>
+</div>
+<div class="vl g"></div><div class="al">results synthesized &#x2192; reply + Slack push + SSE broadcast</div>
+<div class="arow" style="gap:12px"><div class="abox x">HQ Dashboard<br><small>:44283</small></div><div class="abox x">Slack Channel<br><small>webhook</small></div><div class="abox x">Agent Reports<br><small>/data/company/</small></div></div>
+</div>
+<h2>The Four Harness Agents</h2>
+<table><thead><tr><th>Mode</th><th>Role</th><th>Key Tools</th><th>Output</th></tr></thead><tbody>
+<tr><td>ceo-agent</td><td>Orchestrator &mdash; routes to sub-agents, synthesizes board-level answers</td><td>curl to /jobs, poll, synthesize</td><td>board-report.md + Slack</td></tr>
+<tr><td>intel-agent</td><td>Live web research, competitor intelligence, market news</td><td>firecrawl_scrape, firecrawl_search, write_file</td><td>intel-report.md</td></tr>
+<tr><td>ops-agent</td><td>Infrastructure health, service monitoring, self-healing</td><td>execute_command (df, systemctl, ss), write_file</td><td>ops-health.md</td></tr>
+<tr><td>dev-agent</td><td>Code review, app building, deployment, debugging</td><td>read_file, write_file, execute_command, all MCPs</td><td>dev-status.md + HTML dashboards</td></tr>
+</tbody></table>
+<h2>Harness API &mdash; Key Endpoints</h2>
+<table><thead><tr><th>Endpoint</th><th>Method</th><th>Description</th></tr></thead><tbody>
+<tr><td>POST /jobs</td><td>202</td><td>Submit a job. Returns {id, status} immediately. Body: {prompt, mode}</td></tr>
+<tr><td>GET /jobs/{id}</td><td>200</td><td>Poll job status + full output. Status: pending&rarr;running&rarr;completed/failed/timeout</td></tr>
+<tr><td>GET /jobs/{id}/stream</td><td>SSE</td><td>Live output stream as the agent works &mdash; one line per SSE event</td></tr>
+<tr><td>POST /schedules</td><td>201</td><td>Register a recurring cron job. Body: {name, cron, mode, prompt}</td></tr>
+<tr><td>GET /schedules</td><td>200</td><td>List all registered schedules with last-run status</td></tr>
+<tr><td>POST /invoke</td><td>200</td><td>Synchronous invocation &mdash; blocks until complete, returns full output</td></tr>
+</tbody></table>
+<h2>Automated Schedules (Live)</h2>
+<div class="tl">
+<div class="tli"><div class="tlt">0 6 * * * &mdash; daily 06:00 UTC</div><div class="tlh">Dev Daily Status <span class="pill pp">dev-agent</span></div><div class="tld">Reviews codebase health across server.py, app.py, server.js. Writes dev-status.md.</div></div>
+<div class="tli"><div class="tlt">0 7 * * * &mdash; daily 07:00 UTC</div><div class="tlh">Intel Daily Briefing <span class="pill pg">intel-agent</span></div><div class="tld">Live Firecrawl research on AI coding tools, competitors, market trends. Writes intel-report.md.</div></div>
+<div class="tli"><div class="tlt">0 8 * * * &mdash; daily 08:00 UTC</div><div class="tlh">CEO Daily Board Report <span class="pill pb">ceo-agent</span></div><div class="tld">Delegates to Intel + Ops, synthesizes into board-ready summary. Writes board-report.md + pushes to Slack.</div></div>
+<div class="tli"><div class="tlt">0 */6 * * * &mdash; every 6 hours</div><div class="tlh">Ops Health Check <span class="pill pz">ops-agent</span></div><div class="tld">Runs df, free, systemctl, ss -tlnp. Self-heals on error. Writes ops-health.md.</div></div>
+</div>
+<h2>Self-Healing Loop in Production</h2>
+<pre># From /data/company-hq/app.py -- ops-agent retry block
+if (not ops_out.strip() or status == "failed") and status != "timeout":
+    yield send("loop_retry", {"agent": "ops", "attempt": 1})
+    retry_prompt = (
+        f"SELF-HEALING RETRY: previous run failed (status={status}).\n"
+        f"Error:\n{raw_output[:400]}\n\nOriginal task: {message}\n\n"
+        f"Analyse the error, resolve it, and complete the task."
+    )
+    rjob = start_job(retry_prompt, "ops-agent")</pre>
+<div class="pfooter"><span>IBM Bob &mdash; Harness Agent Docs</span><span>Page 4 of 11 &nbsp;&middot;&nbsp; <button onclick="show(4)">Next: Tutorial &rarr;</button></span></div>
+</div>
+
+<!-- PAGE 4 -->
+<div class="page" id="p4">
+<div class="hero"><div class="hero-tag">Chapter 04</div><h1>Hands-on <strong>Tutorial</strong></h1><p>Real curl commands against the live Headless Bob system. Every command produces actual output from a running harness agent on Azure &mdash; not a simulation.</p></div>
+<div class="callout info"><div class="ci">&#x1F5A5;&#xFE0F;</div><p><strong>Live system:</strong> <code>http://20.89.63.64:44285</code> &mdash; Bob Harness API &nbsp;|&nbsp; <code>http://20.89.63.64:44285/hq</code> &mdash; Agent HQ Dashboard</p></div>
+<h2>Exercise 1 &mdash; Submit a Job and Poll</h2>
+<h4>Step 1 &mdash; Submit (returns immediately)</h4>
+<pre>curl -s -X POST http://20.89.63.64:44285/jobs \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "What is disk usage on this server?", "mode": "ops-agent"}'
+
+# Immediate response -- no waiting:
+{"id": "a3f9e2b1c4d5", "status": "pending"}</pre>
+<h4>Step 2 &mdash; Poll until done</h4>
+<pre>curl -s http://20.89.63.64:44285/jobs/a3f9e2b1c4d5 | python3 -m json.tool
+# {"id": "...", "status": "completed", "output": "..."}</pre>
+<h4>Step 3 &mdash; Submit, poll, and print in one script</h4>
+<pre>JOB=$(curl -s -X POST http://20.89.63.64:44285/jobs \
+  -H "Content-Type: application/json" \
+  -d '{"prompt":"Check systemd services","mode":"ops-agent"}' \
+  | python3 -c "import sys,json; print(json.load(sys.stdin)['id'])")
+
+while true; do
+  S=$(curl -s http://20.89.63.64:44285/jobs/$JOB \
+      | python3 -c "import sys,json; print(json.load(sys.stdin)['status'])")
+  [ "$S" != "running" ] &amp;&amp; [ "$S" != "pending" ] &amp;&amp; break
+  sleep 3
+done
+
+curl -s http://20.89.63.64:44285/jobs/$JOB \
+  | python3 -c "import sys,json; print(json.load(sys.stdin)['output'][-2000:])"</pre>
+<h2>Exercise 2 &mdash; CEO Agent Delegation</h2>
+<pre>curl -s -X POST http://20.89.63.64:44285/jobs \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "Competitive position vs GitHub Copilot?", "mode": "ceo-agent"}'
+
+# CEO agent internally:
+#   1. POST /jobs { mode: "intel-agent", prompt: "research..." }
+#   2. Polls until intel-agent completes
+#   3. Synthesizes into executive answer</pre>
+<h2>Exercise 3 &mdash; Live SSE Stream</h2>
+<pre># Start + stream in one call:
+curl -s -N -X POST http://20.89.63.64:44285/stream \
+  -H "Content-Type: application/json" \
+  -d '{"prompt":"Check memory usage","mode":"ops-agent"}'
+
+# Or stream an existing job:
+curl -s -N http://20.89.63.64:44285/jobs/{id}/stream</pre>
+<h2>Exercise 4 &mdash; Register a Cron Schedule</h2>
+<pre>curl -s -X POST http://20.89.63.64:44285/schedules \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Morning Intel Brief",
+    "cron": "0 9 * * *",
+    "mode": "intel-agent",
+    "prompt": "Research AI coding assistant news from past 24h. Write to /data/company/intel-report.md"
+  }'
+
+# List all schedules
+curl -s http://20.89.63.64:44285/schedules | python3 -m json.tool
+
+# Trigger manually
+curl -s -X POST http://20.89.63.64:44285/schedules/{id}/run</pre>
+<h2>Exercise 5 &mdash; HQ Chat API (Orchestration + SSE)</h2>
+<pre>curl -s -N -X POST http://20.89.63.64:44285/hq/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Check infrastructure health and flag any risks"}'
+
+# Events stream back live:
+data: {"type":"thinking",    "content":{"agent":"ceo","text":"Routing to Ops Agent..."}}
+data: {"type":"delegate",    "content":{"from":"ceo","to":"ops"}}
+data: {"type":"agent_start", "content":{"agent":"ops","task":"Infrastructure health check"}}
+data: {"type":"loop_retry",  "content":{"agent":"ops","attempt":1}}  &lt;-- if self-healing fires
+data: {"type":"agent_done",  "content":{"agent":"ops"}}
+data: {"type":"reply",       "content":"## Infrastructure Status\n\nAll services green..."}</pre>
+<h2>Exercise 6 &mdash; Manual Slack Push</h2>
+<pre>curl -s -X POST http://20.89.63.64:44285/hq/api/slack/push \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Deploy completed successfully", "icon": "&#x2705;"}'
+# {"ok": true}</pre>
+<h2>Is This a Real Harness?</h2>
+<div class="grid g3">
+<div class="card gb"><div class="card-icon">&#x2705;</div><div class="card-title">Async job queue</div><div class="card-body">POST /jobs returns instantly with a job ID. Caller polls GET /jobs/{id}. No blocking HTTP calls.</div></div>
+<div class="card gb"><div class="card-icon">&#x2705;</div><div class="card-title">Unattended execution</div><div class="card-body">bob run executes with all tool groups pre-approved. No human approval dialogs at runtime.</div></div>
+<div class="card gb"><div class="card-icon">&#x2705;</div><div class="card-title">Multi-agent orchestration</div><div class="card-body">CEO agent delegates to specialist agents via the same /jobs API. Results synthesized programmatically.</div></div>
+<div class="card gb"><div class="card-icon">&#x2705;</div><div class="card-title">Self-healing retries</div><div class="card-body">On empty/failed output, harness re-submits with error context. Agent resolves its own failures autonomously.</div></div>
+<div class="card gb"><div class="card-icon">&#x2705;</div><div class="card-title">Scheduled automation</div><div class="card-body">4 cron schedules run agents daily/every-6h without any human trigger. Results go to files + Slack.</div></div>
+<div class="card gb"><div class="card-icon">&#x2705;</div><div class="card-title">Observable delivery</div><div class="card-body">Results go to files, Slack webhook, SSE event bus, and HQ dashboard &mdash; not just a chat bubble.</div></div>
+</div>
+<div class="callout tip"><div class="ci">&#x1F3AF;</div><p><strong>Yes, this is a real harness.</strong> The system meets every definition: async job management, unattended Bob execution via <code>bob run --mode</code>, multi-agent delegation, loop-engineering retries, scheduled automation, and structured output delivery. The HQ dashboard is the control plane; the harness is the engine underneath it.</p></div>
+<div class="pfooter"><span>IBM Bob &mdash; Harness Agent Docs</span><span>Page 5 of 11 &nbsp;&middot;&nbsp; <button onclick="show(5)">Next: OpenHarness Analysis &rarr;</button></span></div>
+</div>
+
+
+<!-- PAGE 5 -->
+<div class="page" id="p5">
+<div class="hero"><div class="hero-tag">Chapter 05</div><h1>Why IBM Bob is the<br><strong>Ideal Harness Agent</strong></h1><p>What Bob uniquely brings to the harness pattern that other open-source agents can&apos;t match &mdash; and 4 concrete Harness improvements that would make Headless Bob production-grade.</p></div>
+
+<h2>What Bob Uniquely Brings</h2>
+<p>OpenHarness is a great framework for building agents from scratch. But IBM Bob is a fully matured, enterprise-grade agent that comes with everything wired up <em>before you write a single line of harness code.</em> Here&apos;s what that means in practice:</p>
+
+<div class="grid g2">
+<div class="card ib">
+  <div class="card-icon">&#x1F4BC;</div>
+  <div class="card-title">Enterprise-grade out of the box</div>
+  <div class="card-body">IBM Bob ships with SSO, audit logging, data residency controls, and IBM security review &mdash; none of which you get from open-source frameworks. An enterprise can deploy Headless Bob without a 6-month security review process.</div>
+</div>
+<div class="card ib">
+  <div class="card-icon">&#x1F9E0;</div>
+  <div class="card-title">Custom modes = zero-config agent personas</div>
+  <div class="card-body">Define a CEO agent in 10 lines of YAML. No Python class, no constructor, no tool registration loop. <code>bob run --mode ceo-agent "prompt"</code> and it&apos;s running with full domain expertise injected via <code>roleDefinition</code>.</div>
+</div>
+<div class="card ib">
+  <div class="card-icon">&#x1F527;</div>
+  <div class="card-title">43+ tools pre-wired</div>
+  <div class="card-body">File read/write, shell exec, web search, MCP protocol, skills loading &mdash; all available with zero setup. OpenHarness ships 43 tools too, but you have to build the harness layer yourself. Bob&apos;s tools are ready in <code>groups: [read,edit,execute,mcp,skill]</code>.</div>
+</div>
+<div class="card ib">
+  <div class="card-icon">&#x1F4E6;</div>
+  <div class="card-title">MCP ecosystem, natively</div>
+  <div class="card-body">Bob runs Firecrawl, Obsidian, Postgres, MongoDB, Redis MCPs with a single JSON config. Intel Agent gets live internet access; Dev Agent gets database access &mdash; no custom integration code needed.</div>
+</div>
+<div class="card ib">
+  <div class="card-icon">&#x1F501;</div>
+  <div class="card-title">Non-interactive mode is first-class</div>
+  <div class="card-body"><code>bob run</code> is designed for headless execution. Output is structured and parseable. JSON and stream-json output formats remove the need for fragile stdout parsing. The harness just calls Bob and reads the result.</div>
+</div>
+<div class="card ib">
+  <div class="card-icon">&#x1F4CB;</div>
+  <div class="card-title">Skills = reusable agent knowledge</div>
+  <div class="card-body">SKILL.md files give agents persistent, specialised knowledge loaded on demand &mdash; market intelligence playbooks, coding standards, ops runbooks. No vector database, no RAG pipeline. Just markdown files that Bob reads when relevant.</div>
+</div>
+</div>
+
+<div class="callout tip"><div class="ci">&#x1F3AF;</div><p><strong>The key insight:</strong> OpenHarness makes it possible to <em>build</em> an agent runtime. IBM Bob means you <em>already have</em> one. The harness layer (our FastAPI server + scheduler) is thin because Bob handles everything the agent actually needs to do.</p></div>
+
+<h2>Bob + Harness: What OpenHarness Does That We Should Borrow</h2>
+<p>OpenHarness has 15k+ stars because it solves real problems. Here are the 4 patterns from OpenHarness that would meaningfully upgrade Headless Bob if added to the Harness layer:</p>
+
+<div class="tl">
+<div class="tli">
+  <div class="tlt">IMPROVEMENT 01 &mdash; HIGH VALUE</div>
+  <div class="tlh">ohmo as inbound Slack / Telegram gateway</div>
+  <div class="tld">OpenHarness&apos;s <strong>ohmo</strong> has a battle-tested Slack/Telegram/Discord gateway. Headless Bob is stuck at outbound-only Slack because IBM workspace blocks <code>xoxb-</code> bot tokens. Wiring ohmo as a relay between Slack and our HQ <code>/api/chat</code> endpoint would unlock true two-way conversation &mdash; type a question in Slack, CEO agent replies there automatically. No IBM workspace permissions needed; ohmo runs outside IBM&apos;s tenant.</div>
+</div>
+<div class="tli">
+  <div class="tlt">IMPROVEMENT 02 &mdash; HIGH VALUE</div>
+  <div class="tlh">Persistent memory between agent runs (MEMORY.md pattern)</div>
+  <div class="tld">OpenHarness agents write key decisions, patterns, and context to a <strong>MEMORY.md</strong> file that is injected at the start of every subsequent run. Right now, each Bob job starts cold &mdash; the intel agent re-discovers the same competitors every day. A <code>/data/company/MEMORY.md</code> that accumulates context across runs would make agents measurably smarter over time with zero infrastructure cost.</div>
+</div>
+<div class="tli">
+  <div class="tlt">IMPROVEMENT 03 &mdash; MEDIUM</div>
+  <div class="tlh">OpenHarness swarm registry as the orchestration backbone</div>
+  <div class="tld">Our CEO agent delegates via raw <code>curl POST /jobs</code> inside a Bob prompt. OpenHarness&apos;s <strong>swarm module</strong> provides a proper team registry, mailbox-based message passing, and a background task lifecycle manager. Using it as the coordination layer instead of ad-hoc curl calls would give us structured agent-to-agent communication, parallel delegation, and proper task state management &mdash; with the Bob binary still doing the actual agent work.</div>
+</div>
+<div class="tli">
+  <div class="tlt">IMPROVEMENT 04 &mdash; MEDIUM</div>
+  <div class="tlh">autopilot-dashboard as a polished React frontend</div>
+  <div class="tld">OpenHarness ships an <strong>autopilot-dashboard</strong> (React + TypeScript + Vite) that visualises agent runs in real-time. Our HQ dashboard is Flask + vanilla JS &mdash; functional but not demo-worthy at scale. Embedding autopilot-dashboard and wiring it to our SSE event bus (<code>/api/events</code>) would give the HQ a production-quality frontend with near-zero custom CSS work.</div>
+</div>
+</div>
+
+<h2>Where Bob Wins vs OpenHarness</h2>
+<table class="cmp"><thead><tr><th>Capability</th><th>OpenHarness approach</th><th>Bob + Harness advantage</th></tr></thead><tbody>
+<tr><td>Agent persona definition</td><td>Python class + tool registration (~50 lines)</td><td>10-line YAML custom mode, zero Python</td></tr>
+<tr><td>Enterprise deployment</td><td>DIY security review, SSO integration</td><td>IBM enterprise-grade out of the box</td></tr>
+<tr><td>Scheduled autonomy</td><td>Not built-in &mdash; user adds cron externally</td><td>Native /schedules API + 4 live cron jobs</td></tr>
+<tr><td>Domain simulation</td><td>General-purpose, no business domain</td><td>CEO/Intel/Ops/Dev with real company data files</td></tr>
+<tr><td>REST harness API</td><td>CLI-first, no REST server</td><td>Full FastAPI: /jobs, /schedules, /invoke, SSE</td></tr>
+<tr><td>IBM ecosystem</td><td>Not applicable</td><td>Native: WatsonX, IBM Cloud, Watson APIs via MCP</td></tr>
+</tbody></table>
+
+<div class="pfooter"><span>IBM Bob &mdash; Harness Agent Docs</span><span>Page 6 of 11 &nbsp;&middot;&nbsp; <button onclick="show(6)">Next: Cron Job Examples &rarr;</button></span></div>
+</div>
+
+<!-- PAGE 6 -->
+<div class="page" id="p6">
+<div class="hero"><div class="hero-tag">Chapter 06</div><h1>Cron Job<br><strong>Examples</strong></h1><p>Real patterns for scheduling Bob harness agents &mdash; from the Harness REST API to raw cron + shell scripts. Every example is tested against the live system at <code>20.89.63.64:44285</code>.</p></div>
+
+<div class="callout info"><div class="ci">&#x1F5A5;&#xFE0F;</div><p><strong>Two ways to schedule Bob:</strong> (1) <strong>Harness <code>/schedules</code> API</strong> &mdash; managed by the FastAPI server, survives restarts, visible in the UI. (2) <strong>System crontab</strong> &mdash; OS-level, runs even if the Harness server is down, output goes to files. Use both for different needs.</p></div>
+
+<h2>Method 1 &mdash; Harness /schedules API</h2>
+<h3>Register a Schedule</h3>
+<pre>curl -s -X POST http://20.89.63.64:44285/schedules \
+  -H "Content-Type: application/json" \
+  -d &apos;{
+    "name":   "Morning Intel Brief",
+    "cron":   "0 7 * * *",
+    "mode":   "intel-agent",
+    "prompt": "Research AI coding assistant news from the past 24 hours. Focus on IBM, GitHub Copilot, Cursor, and new model releases. Write findings to /data/company/intel-report.md"
+  }&apos;
+
+# Response
+{"id": "sched_a3f9", "name": "Morning Intel Brief", "cron": "0 7 * * *",
+ "mode": "intel-agent", "status": "active", "next_run": "2026-09-08T07:00:00Z"}</pre>
+
+<h3>List All Schedules</h3>
+<pre>curl -s http://20.89.63.64:44285/schedules | python3 -m json.tool
+
+# Output (4 live schedules on the production system):
+[
+  {"id":"sched_dev",   "name":"Dev Daily Status",       "cron":"0 6 * * *",   "mode":"dev-agent",   "last_run":"completed"},
+  {"id":"sched_intel", "name":"Intel Daily Briefing",   "cron":"0 7 * * *",   "mode":"intel-agent", "last_run":"completed"},
+  {"id":"sched_ceo",   "name":"CEO Board Report",       "cron":"0 8 * * *",   "mode":"ceo-agent",   "last_run":"completed"},
+  {"id":"sched_ops",   "name":"Ops Health Check",       "cron":"0 */6 * * *", "mode":"ops-agent",   "last_run":"completed"}
+]</pre>
+
+<h3>Trigger a Schedule Manually</h3>
+<pre># Run immediately, don&apos;t wait for next cron tick
+curl -s -X POST http://20.89.63.64:44285/schedules/sched_intel/run
+{"job_id": "job_b7e2", "status": "pending"}</pre>
+
+<h3>Delete a Schedule</h3>
+<pre>curl -s -X DELETE http://20.89.63.64:44285/schedules/sched_intel
+{"deleted": true}</pre>
+
+<h2>Method 2 &mdash; System Crontab (Direct)</h2>
+<p>Use system cron when you want Bob to run even if the Harness server is offline, or for simple file-output tasks that don&apos;t need job tracking.</p>
+
+<h3>Edit the crontab</h3>
+<pre>crontab -e</pre>
+
+<h3>Basic pattern &mdash; run Bob, write output to file</h3>
+<pre># Every day at 06:30 UTC &mdash; ops health check
+30 6 * * * BOB_API_KEY=your_key /usr/local/bin/bob run \
+  --mode ops-agent \
+  "Check disk, memory, CPU, and all systemd services. Write report to /data/company/ops-health.md" \
+  &gt;&gt; /var/log/bob-ops.log 2&gt;&amp;1</pre>
+
+<h3>Pattern with timestamp logging</h3>
+<pre># Every Monday at 08:00 &mdash; CEO weekly board report
+0 8 * * 1 echo "=== $(date -u) ===" &gt;&gt; /var/log/bob-ceo.log && \
+  BOB_API_KEY=your_key /usr/local/bin/bob run \
+  --mode ceo-agent --max-turns 30 \
+  "Generate weekly board report. Delegate to intel-agent and ops-agent. Write to /data/company/board-report.md" \
+  &gt;&gt; /var/log/bob-ceo.log 2&gt;&amp;1</pre>
+
+<h3>Pattern via Harness REST (curl from cron)</h3>
+<pre># Submit to Harness, poll for completion, log output
+# Save as /usr/local/bin/bob-intel-cron.sh
+#!/bin/bash
+set -e
+HARNESS="http://localhost:44285"
+PROMPT="Research AI coding tools news from past 24h. Write to /data/company/intel-report.md"
+
+JOB_ID=$(curl -sf -X POST $HARNESS/jobs \
+  -H "Content-Type: application/json" \
+  -d "{"prompt":"$PROMPT","mode":"intel-agent"}" \
+  | python3 -c "import sys,json; print(json.load(sys.stdin)[&apos;id&apos;])")
+
+echo "[$(date -u)] Job submitted: $JOB_ID"
+
+# Poll until done (max 10 min)
+for i in $(seq 1 120); do
+  STATUS=$(curl -sf $HARNESS/jobs/$JOB_ID \
+    | python3 -c "import sys,json; print(json.load(sys.stdin)[&apos;status&apos;])")
+  [ "$STATUS" = "completed" ] &amp;&amp; echo "DONE" &amp;&amp; exit 0
+  [ "$STATUS" = "failed" ]    &amp;&amp; echo "FAILED" &amp;&amp; exit 1
+  [ "$STATUS" = "timeout" ]   &amp;&amp; echo "TIMEOUT" &amp;&amp; exit 1
+  sleep 5
+done
+echo "POLL TIMEOUT"
+
+# Register in crontab:
+# 0 7 * * * /usr/local/bin/bob-intel-cron.sh &gt;&gt; /var/log/bob-intel.log 2&gt;&amp;1</pre>
+
+<h2>Cron Expression Cheatsheet</h2>
+<table><thead><tr><th>Expression</th><th>Meaning</th><th>Use case</th></tr></thead><tbody>
+<tr><td>0 7 * * *</td><td>Every day at 07:00</td><td>Morning intel brief</td></tr>
+<tr><td>0 8 * * 1</td><td>Every Monday at 08:00</td><td>Weekly board report</td></tr>
+<tr><td>0 */6 * * *</td><td>Every 6 hours</td><td>Ops health check</td></tr>
+<tr><td>*/30 9-17 * * 1-5</td><td>Every 30 min, 9-17, weekdays</td><td>Trading hours monitoring</td></tr>
+<tr><td>0 0 1 * *</td><td>1st of every month, midnight</td><td>Monthly KPI report</td></tr>
+<tr><td>0 6,12,18 * * *</td><td>Three times a day: 06, 12, 18</td><td>Sales pipeline refresh</td></tr>
+<tr><td>@reboot</td><td>Once at system boot</td><td>Start a warm-up job after VM restart</td></tr>
+</tbody></table>
+
+<h2>Production Schedule: What We Run</h2>
+<div class="tl">
+<div class="tli">
+  <div class="tlt">0 6 * * * &mdash; daily 06:00 UTC</div>
+  <div class="tlh">Dev Daily Status <span class="pill pp">dev-agent</span></div>
+  <div class="tld">Reviews <code>server.py</code>, <code>app.py</code>, <code>server.js</code> for code health, TODOs, and tech debt. Writes <code>/data/company/dev-status.md</code>. Triggers at 06:00 so output is ready before the Intel run at 07:00.</div>
+</div>
+<div class="tli">
+  <div class="tlt">0 7 * * * &mdash; daily 07:00 UTC</div>
+  <div class="tlh">Intel Daily Briefing <span class="pill pg">intel-agent</span></div>
+  <div class="tld">Live Firecrawl MCP research: IBM AI coding tools, GitHub Copilot news, Cursor updates, competitor moves. Writes <code>/data/company/intel-report.md</code>. Feeds the CEO run at 08:00.</div>
+</div>
+<div class="tli">
+  <div class="tlt">0 8 * * * &mdash; daily 08:00 UTC</div>
+  <div class="tlh">CEO Board Report <span class="pill pb">ceo-agent</span></div>
+  <div class="tld">Delegates to intel-agent + ops-agent via <code>POST /jobs</code>. Polls both to completion. Synthesizes a board-ready executive summary. Writes <code>/data/company/board-report.md</code> and auto-pushes to Slack.</div>
+</div>
+<div class="tli">
+  <div class="tlt">0 */6 * * * &mdash; every 6 hours</div>
+  <div class="tlh">Ops Health Check <span class="pill pz">ops-agent</span></div>
+  <div class="tld">Runs <code>df -h</code>, <code>free -m</code>, <code>systemctl status</code>, <code>ss -tlnp</code>. Self-heals on empty output via retry loop. Writes <code>/data/company/ops-health.md</code>.</div>
+</div>
+</div>
+
+<h2>Adding a New Schedule &mdash; Step by Step</h2>
+<div class="steps">
+<div class="step"><div class="snum">1</div><div><div class="stitle">Design the prompt</div><div class="sdesc">Write the agent task as a clear, complete instruction. Include the output file path. Be specific about what "done" looks like: <em>"Research X. Write findings to /data/company/Y.md including sections A, B, C."</em></div></div></div>
+<div class="step"><div class="snum">2</div><div><div class="stitle">Pick the right mode</div><div class="sdesc">Match the task to the agent persona: <strong>intel-agent</strong> for research/web, <strong>ops-agent</strong> for infrastructure, <strong>dev-agent</strong> for code/build, <strong>ceo-agent</strong> for synthesis that requires delegating to others.</div></div></div>
+<div class="step"><div class="snum">3</div><div><div class="stitle">Test manually first</div><div class="sdesc">Submit a one-off job and verify the output before scheduling: <code>curl -X POST /jobs -d &apos;{"prompt":"...","mode":"..."}&apos;</code>. Confirm the output file is written correctly and the reply is non-empty.</div></div></div>
+<div class="step"><div class="snum">4</div><div><div class="snum" style="background:var(--g60)">4</div><div class="stitle">Register the schedule</div><div class="sdesc"><code>POST /schedules</code> with name, cron expression, mode, and prompt. The Harness server persists it in <code>schedules.json</code> and survives restarts. Check <code>GET /schedules</code> to confirm.</div></div></div>
+<div class="step"><div class="snum">5</div><div><div class="stitle">Monitor the first run</div><div class="sdesc">After the first scheduled execution, check <code>GET /schedules</code> for <code>last_run</code> status. Tail <code>journalctl -u bob-harness -f</code> to see the job lifecycle. Verify the output file was updated.</div></div></div>
+</div>
+
+<div class="callout tip"><div class="ci">&#x26A1;</div><p><strong>Pro tip &mdash; cascade scheduling:</strong> Stagger schedules so upstream agents finish before downstream ones start. Dev at 06:00, Intel at 07:00, CEO at 08:00. By the time CEO runs, both intel-report.md and ops-health.md are fresh &mdash; CEO&apos;s synthesis is based on today&apos;s data, not yesterday&apos;s.</p></div>
+
+<div class="pfooter"><span>IBM Bob &mdash; Harness Agent Docs</span><span>Page 7 of 11 &nbsp;&middot;&nbsp; <button onclick="show(7)">Next: Obsidian Vault &rarr;</button></span></div>
+</div>
+
+
+<!-- PAGE 7 -->
+<div class="page" id="p7">
+<div class="hero"><div class="hero-tag">Chapter 07</div><h1>Obsidian Vault<br><strong>as Persistent Memory</strong></h1><p>How Headless Bob uses a local Obsidian vault connected via MCP to accumulate knowledge across runs &mdash; giving agents a persistent, structured long-term memory that survives restarts, scales over time, and is human-readable.</p></div>
+
+<h2>The Problem: Agents Start Cold</h2>
+<p>By default, every Bob agent job starts with zero memory of what happened before. The Intel Agent discovers the same competitors every morning. The Ops Agent flags the same recurring issue it already flagged yesterday. The CEO Agent re-learns the company context from scratch every time it runs.</p>
+<div class="callout warn"><div class="ci">&#x26A0;&#xFE0F;</div><p><strong>Without persistent memory:</strong> Each job is an island. Agents duplicate work, miss patterns, and cannot learn from previous runs. A 30-day-old system is no smarter than a 1-day-old system.</p></div>
+
+<h2>The Solution: Obsidian MCP as a Memory Layer</h2>
+<p>The <strong>Obsidian MCP server</strong> connects Bob directly to a local vault of markdown notes. Agents can read, write, search, and update notes programmatically &mdash; turning the vault into a structured, queryable, human-readable long-term memory store.</p>
+
+<div class="grid g3">
+<div class="card ib">
+  <div class="card-icon">&#x1F4D6;</div>
+  <div class="card-title">Read existing notes</div>
+  <div class="card-body">Before starting a task, an agent reads relevant vault notes to load context: previous findings, known issues, decisions made, patterns observed.</div>
+</div>
+<div class="card ib">
+  <div class="card-icon">&#x270F;&#xFE0F;</div>
+  <div class="card-title">Write new findings</div>
+  <div class="card-body">After completing a task, the agent writes key insights and new patterns to the vault. Future runs inherit this accumulated knowledge.</div>
+</div>
+<div class="card ib">
+  <div class="card-icon">&#x1F50D;</div>
+  <div class="card-title">Search across history</div>
+  <div class="card-body">Agents can <code>search_notes</code> by keyword or tag to find relevant context from any past run &mdash; not just yesterday, but months ago.</div>
+</div>
+</div>
+
+<h2>Architecture: Bob + Obsidian MCP</h2>
+<div class="arch">
+  <div class="arow" style="gap:0;width:100%">
+    <div style="flex:1;background:var(--ibm10);border:1px solid var(--ibm20);border-radius:2px;padding:14px;margin-right:6px">
+      <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--ibm);margin-bottom:8px">Bob Agent (any mode)</div>
+      <div style="font-size:11px;color:var(--t2);line-height:2.2">1. Read vault: load prior context<br>2. Execute task with memory<br>3. Write findings back to vault<br>4. Update MEMORY.md summary</div>
+    </div>
+    <div style="display:flex;align-items:center;font-size:20px;color:var(--ibm);padding:0 8px">&#x21C4;</div>
+    <div style="flex:1;background:#f3f0ff;border:2px solid #8a3ffc;border-radius:2px;padding:14px">
+      <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#6929c4;margin-bottom:8px">Obsidian MCP Server</div>
+      <div style="font-size:11px;color:var(--t2);line-height:2.2">read_note / write_note<br>search_notes / patch_note<br>list_directory / get_frontmatter<br>manage_tags / update_frontmatter</div>
+    </div>
+    <div style="display:flex;align-items:center;font-size:20px;color:#8a3ffc;padding:0 8px">&#x21C4;</div>
+    <div style="flex:1;background:#f3f0ff;border:1px solid #be95ff;border-radius:2px;padding:14px">
+      <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#6929c4;margin-bottom:8px">Obsidian Vault on VM</div>
+      <div style="font-size:11px;color:var(--t2);line-height:2.2">/data/vault/<br>&nbsp;&nbsp;Daily/ (per-run logs)<br>&nbsp;&nbsp;Insights/ (key findings)<br>&nbsp;&nbsp;Infrastructure/<br>&nbsp;&nbsp;Bob-Builders-Day/</div>
+    </div>
+  </div>
+</div>
+
+<h2>Memory Patterns in Practice</h2>
+<h3>Pattern 1 &mdash; Daily Log Note (Intel Agent)</h3>
+<pre># Intel Agent roleDefinition includes:
+# Before starting research:
+#   1. Read /Daily/YYYY-MM-DD.md -- what was found today already
+#   2. Read /Insights/Competitors.md -- known competitor list
+# After research:
+#   3. Write new findings to today's Daily note
+#   4. Update /Insights/Competitors.md with any new entries
+#   5. Add frontmatter tags: [intel, competitors, date]</pre>
+
+<h3>Pattern 2 &mdash; MEMORY.md Rolling Summary</h3>
+<pre># /data/vault/MEMORY.md  (updated by every agent after each run)
+## Last updated: 2026-09-07 by intel-agent
+
+### Known competitors
+- GitHub Copilot: dominant, GPT-4o backend, 2M+ users
+- Cursor: fastest growing, Claude 3.5 Sonnet, VSCode fork
+- Windsurf: Codeium product, strong enterprise push
+
+### Recurring ops issues
+- /data disk at 62% -- monitor for growth
+- bob-harness restarts ~2x/week -- investigate memory leak
+
+### CEO context
+- Board report every Monday 08:00 UTC
+- Primary KPI: IBM Bob adoption rate vs GitHub Copilot</pre>
+
+<h3>Pattern 3 &mdash; Insight Notes (Ops Agent)</h3>
+<pre># /data/vault/Insights/Infrastructure-Patterns.md
+
+## Disk growth rate
+Observed: ~2GB/week from agent report accumulation
+Action: Add log rotation to /data/company/ (keep 30 days)
+Status: Flagged to CEO agent 2026-09-05
+
+## Services stability
+bob-harness: 3 restarts in 7 days -- acceptable
+bob-hq: 0 restarts in 7 days -- stable
+Trend: improving since systemd Restart=always added</pre>
+
+<h2>Configuring Obsidian MCP on the VM</h2>
+<pre># ~/.bob/settings/mcp.json
+{
+  "mcpServers": {
+    "obsidian": {
+      "command": "node",
+      "args": ["/data/vault/bob-config/mcp-server/index.js"],
+      "env": { "OBSIDIAN_VAULT_PATH": "/data/vault" }
+    }
+  }
+}</pre>
+<div class="callout tip"><div class="ci">&#x2705;</div><p><strong>Already live on this VM.</strong> The Obsidian MCP is configured and active. The vault at <code>/data/vault/</code> already contains Infrastructure notes, Daily logs, Insights, and Bob-Builders-Day documentation. Every agent with <code>mcp</code> in its groups can read and write it.</p></div>
+
+<h2>What Gets Better With Memory</h2>
+<table><thead><tr><th>Agent</th><th>Without Memory</th><th>With Obsidian Memory</th></tr></thead><tbody>
+<tr><td>intel-agent</td><td>Re-discovers same competitors every day</td><td>Reads known list, focuses on what's new, tracks trends over weeks</td></tr>
+<tr><td>ops-agent</td><td>Reports same disk usage warning daily</td><td>Tracks growth rate, flags anomalies vs baseline, notes resolved issues</td></tr>
+<tr><td>ceo-agent</td><td>Re-synthesizes context from scratch every run</td><td>Reads MEMORY.md for prior decisions, builds on cumulative intelligence</td></tr>
+<tr><td>dev-agent</td><td>Re-audits same code issues every run</td><td>Reads prior review notes, only reports new issues, tracks tech debt over sprints</td></tr>
+</tbody></table>
+
+<div class="callout info"><div class="ci">&#x1F9E0;</div><p><strong>The compound effect:</strong> On day 1, agents are smart. On day 30, they are smart <em>and experienced</em> &mdash; they know the codebase history, recurring issues, and competitor landscape as it evolved. The vault is the agent's long-term memory. The VM is just how it stays on 24/7.</p></div>
+
+<div class="pfooter"><span>IBM Bob &mdash; Harness Agent Docs</span><span>Page 8 of 11 &nbsp;&middot;&nbsp; <button onclick="show(8)">Next: Agent Loop &times; IBM SDLC &rarr;</button></span></div>
+</div>
+
+<!-- PAGE 8 -->
+<div class="page" id="p8">
+<div class="hero"><div class="hero-tag">Chapter 08</div><h1>The Agent Loop<br><strong>&times; IBM SDLC</strong></h1><p>IBM Bob is designed to be an AI partner across the entire Software Development Lifecycle. The Headless Bob agent loop maps directly onto each SDLC phase, creating a continuous autonomous improvement cycle.</p></div>
+
+<h2>The IBM SDLC: 6 Phases</h2>
+<p>IBM's SDLC is a continuous 6-phase cycle. Bob is positioned as the AI partner at every phase &mdash; not just code generation, but from initial planning through live production maintenance.</p>
+
+<div style="background:var(--layer);border:1px solid var(--border);border-radius:4px;padding:28px 20px;margin:20px 0;display:flex;flex-direction:column;align-items:center">
+  <div style="font-size:13px;font-weight:700;color:#1a3a6b;margin-bottom:4px">Introducing IBM Bob, the AI partner across the SDLC</div>
+  <div style="font-size:11px;color:var(--t2);margin-bottom:20px">Delivering AI across the SDLC requires a different architecture. Bob is built for that.</div>
+  <svg viewBox="0 0 800 560" width="100%" style="max-width:800px">
+    <defs>
+      <linearGradient id="helmGrad" x1="0%" y1="0%" x2="60%" y2="100%">
+        <stop offset="0%" style="stop-color:#7c5cd8;stop-opacity:1"/>
+        <stop offset="100%" style="stop-color:#4589ff;stop-opacity:1"/>
+      </linearGradient>
+      <linearGradient id="bodyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" style="stop-color:#f4f4f4;stop-opacity:1"/>
+        <stop offset="100%" style="stop-color:#dde1e7;stop-opacity:1"/>
+      </linearGradient>
+    </defs>
+
+    <!-- outer ring track -->
+    <circle cx="400" cy="290" r="175" fill="none" stroke="#dde8f8" stroke-width="28" opacity="0.7"/>
+    <!-- inner white circle -->
+    <circle cx="400" cy="290" r="90" fill="white" stroke="#d0e2ff" stroke-width="2"/>
+
+    <!-- ── BOB ROBOT PNG ── -->
+    <image href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD0eNT6AAAAAXNSR0IArs4c6QAAAERlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAA6ABAAMAAAABAAEAAKACAAQAAAABAAACAKADAAQAAAABAAACAAAAAAAL+LWFAABAAElEQVR4Aey9S5LkuNolxogKWaWZ2qyyZ5oFagWtBcgsWJr0RGZ9pQ2k1w60g/Tcwe0VpOcOagfpuYO7g2LMephl9suUJYsboXPwcpLOB0gn/UEeZCJAAN8DOCDxfQDpZJYpCAEhIASEgBAQAkJACAgBISAEhIAQEAJCQAgIASEgBISAEBACQkAICAEhIASEgBAQAkJACAgBISAEhIAQEAJCQAgIASEgBISAEBACQkAICAEhIASEgBAQAkJACAgBISAEhIAQEAJCQAgIASEgBISAEBACQkAICAEhIASEgBAQAkJACAgBISAEhIAQEAJCQAgIASEgBISAEBACQkAICAEhIASEgBAQAkJACAgBISAEhIAQEAJCQAgIASEgBISAEBACQkAICAEhIASEgBAQAkJACAgBISAEhIAQEAJCQAgIASEgBISAEBACQkAICAEhIASEgBAQAkJACAgBISAEhIAQEAJCQAgIASEgBISAEBACQkAICAEhIASEgBAQAkJACAgBISAEhIAQEAJCQAgIASEgBISAEBACQkAICAEhIASEgBAQAkJACAgBISAEhIAQEAJCQAgIASEgBISAEBACQkAICAEhIASEgBAQAkJACAgBISAEhIAQEAJCQAgIASEgBISAEDgVgbtTBYhfCAiBSRAwkJIjMmVcYijQKca9T5EoCAEhIASEgBBYHwIGXd4iFohvK4vs8xbRICoIASEgBISAEFgFAga93CGuzei39ZdYGEQFISAEhIAQEAKLRSBHzwrENmO41nJikiMqCAEhIASEgBBYHAIb9GitBj6138RIQQgIASEgBITAYhDI0ZNUI7h2OmKlIASEwMwI3M0sX+KFgBBw97f/FBCDEPgV1MUgDhELASEwCIH7QdQiFgJCYAwCuzFMK+cRZis/AdR9ISAEhMCtI7BBB9a+pT+2/8ROQQgIgZkQ0A7ATMBKrBDwCGyExGgEhN1o6MQoBPoR0DMA/RiJQgiMRSAH49dBzIYsiAbJkkLBzuxxVx9xWPgN5Pth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" x="310" y="200" width="180" height="180"/>
+
+    <!-- ── PHASE BOXES (cx=400, cy=290, r=175) ── -->
+    <!-- Angles: 1=top(270°), 2=top-right(330°), 3=bottom-right(30°), 4=bottom(90°), 5=bottom-left(150°), 6=top-left(210°) -->
+    <!-- r=175: positions approx:
+         1: 400,115   2: 551.5,202.5   3: 551.5,377.5   4: 400,465   5: 248.5,377.5   6: 248.5,202.5 -->
+
+    <!-- Phase 1: Plan & Analyze — TOP -->
+    <rect x="296" y="60" width="154" height="42" rx="4" fill="white" stroke="#7eb3f5" stroke-width="2.5"/>
+    <text x="366" y="77" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="12.5" font-weight="700" fill="#1a3a6b">Plan &amp; Analyze</text>
+    <circle cx="434" cy="81" r="13" fill="white" stroke="#4472c4" stroke-width="2"/>
+    <text x="434" y="86" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="11" font-weight="800" fill="#1a3a6b">1</text>
+    <!-- annotation below -->
+    <text x="373" y="116" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" fill="#666">Use case alignment, KPI definition,</text>
+    <text x="373" y="128" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" fill="#666">technical plan defined</text>
+
+    <!-- Phase 2: Design — RIGHT TOP -->
+    <rect x="552" y="172" width="120" height="42" rx="4" fill="#d0e2ff" stroke="#7eb3f5" stroke-width="2"/>
+    <text x="600" y="189" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="12.5" font-weight="700" fill="#1a3a6b">Design</text>
+    <circle cx="658" cy="193" r="13" fill="white" stroke="#4472c4" stroke-width="2"/>
+    <text x="658" y="198" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="11" font-weight="800" fill="#1a3a6b">2</text>
+    <!-- annotation right -->
+    <text x="590" y="228" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" fill="#666">Documented architectural</text>
+    <text x="590" y="240" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" fill="#666">blueprint &amp; tech stack</text>
+
+    <!-- Phase 3: Develop — RIGHT BOTTOM -->
+    <rect x="552" y="348" width="120" height="42" rx="4" fill="#d0e2ff" stroke="#7eb3f5" stroke-width="2"/>
+    <text x="600" y="365" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="12.5" font-weight="700" fill="#1a3a6b">Develop</text>
+    <circle cx="658" cy="369" r="13" fill="white" stroke="#4472c4" stroke-width="2"/>
+    <text x="658" y="374" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="11" font-weight="800" fill="#1a3a6b">3</text>
+    <!-- annotation right -->
+    <text x="590" y="404" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" fill="#666">Core development and</text>
+    <text x="590" y="416" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" fill="#666">enterprise system integration</text>
+
+    <!-- Phase 4: Test — BOTTOM -->
+    <rect x="296" y="468" width="154" height="42" rx="4" fill="#4472c4" stroke="#2a5aaa" stroke-width="2"/>
+    <text x="366" y="485" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="12.5" font-weight="700" fill="white">Test</text>
+    <circle cx="434" cy="489" r="13" fill="white" stroke="#4472c4" stroke-width="2"/>
+    <text x="434" y="494" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="11" font-weight="800" fill="#1a3a6b">4</text>
+    <!-- annotation below -->
+    <text x="373" y="524" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" fill="#666">Iterative testing, load, security,</text>
+    <text x="373" y="536" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" fill="#666">and usability issues</text>
+
+    <!-- Phase 5: Deploy — LEFT BOTTOM -->
+    <rect x="128" y="348" width="120" height="42" rx="4" fill="#4472c4" stroke="#2a5aaa" stroke-width="2"/>
+    <text x="176" y="365" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="12.5" font-weight="700" fill="white">Deploy</text>
+    <circle cx="142" cy="369" r="13" fill="white" stroke="#4472c4" stroke-width="2"/>
+    <text x="142" y="374" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="11" font-weight="800" fill="#1a3a6b">5</text>
+    <!-- annotation left -->
+    <text x="210" y="404" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" fill="#666">Production rollout, initial</text>
+    <text x="210" y="416" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" fill="#666">monitoring, infrastructure scaling</text>
+
+    <!-- Phase 6: Maintain — LEFT TOP -->
+    <rect x="128" y="172" width="120" height="42" rx="4" fill="#4472c4" stroke="#2a5aaa" stroke-width="2"/>
+    <text x="176" y="189" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="12.5" font-weight="700" fill="white">Maintain</text>
+    <circle cx="142" cy="193" r="13" fill="white" stroke="#4472c4" stroke-width="2"/>
+    <text x="142" y="198" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="11" font-weight="800" fill="#1a3a6b">6</text>
+    <!-- annotation left -->
+    <text x="210" y="228" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" fill="#666">Real-time monitoring, performance</text>
+    <text x="210" y="240" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" fill="#666">and security optimization</text>
+
+    <!-- Build & Test / Deploy & Manage section labels -->
+    <text x="650" y="298" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="11" fill="#0f62fe" font-weight="800">Build &amp; Test</text>
+    <text x="150" y="298" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="11" fill="#0f62fe" font-weight="800">Deploy &amp; Manage</text>
+  </svg>
+</div>
+
+<h2>Mapping the Agent Loop to Each SDLC Phase</h2>
+<table class="cmp"><thead><tr><th>SDLC Phase</th><th>Bob Agent</th><th>What the Agent Does</th><th>Output</th></tr></thead><tbody>
+<tr><td>1 Plan &amp; Analyze</td><td>ceo-agent</td><td>Reads market intel + ops health, defines priorities, sets goals, delegates to sub-agents</td><td>board-report.md, sprint plan</td></tr>
+<tr><td>2 Design</td><td>intel-agent + ceo-agent</td><td>Researches architectural patterns, competitor approaches, tech choices; CEO synthesizes into design brief</td><td>design-notes.md in Obsidian</td></tr>
+<tr><td>3 Develop</td><td>dev-agent</td><td>Writes code, builds features, creates dashboards, runs tests, deploys to /data/</td><td>Code diffs, new files, HTML dashboards</td></tr>
+<tr><td>4 Test</td><td>dev-agent + ops-agent</td><td>Dev runs unit checks; Ops validates service health, checks ports, confirms deployments live</td><td>Test results, ops-health.md update</td></tr>
+<tr><td>5 Deploy</td><td>ops-agent</td><td>Confirms systemd services active, checks ports, monitors disk and memory, triggers rollback if needed</td><td>ops-health.md, Slack alert on issues</td></tr>
+<tr><td>6 Maintain</td><td>ops-agent + intel-agent</td><td>Ops monitors 24/7 every 6h; Intel tracks evolving market; loop restarts at Plan &mdash; Obsidian vault carries forward all learned context</td><td>Continuous health reports + vault memory</td></tr>
+</tbody></table>
+
+<h2>The Agent Loop: Continuous Autonomous Cycle</h2>
+<div style="background:var(--layer);border:1px solid var(--border);border-radius:4px;padding:24px;margin:20px 0">
+  <div style="text-align:center;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--ibm);margin-bottom:16px">Headless Bob Agent Loop (24/7 on VM)</div>
+  <svg viewBox="0 0 700 200" width="100%">
+    <rect x="10"  y="74" width="108" height="50" rx="3" fill="#edf5ff" stroke="#0f62fe" stroke-width="1.5"/>
+    <text x="64"  y="95" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="10" font-weight="700" fill="#0043ce">TRIGGER</text>
+    <text x="64"  y="108" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" fill="#525252">cron / API / event</text>
+    <text x="64"  y="119" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" fill="#525252">Slack / webhook</text>
+    <line x1="118" y1="99" x2="138" y2="99" stroke="#0f62fe" stroke-width="1.5"/><polygon points="134,94 142,99 134,104" fill="#0f62fe"/>
+    <rect x="140" y="74" width="108" height="50" rx="3" fill="#f3f0ff" stroke="#8a3ffc" stroke-width="1.5"/>
+    <text x="194" y="95" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="10" font-weight="700" fill="#6929c4">LOAD MEMORY</text>
+    <text x="194" y="108" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" fill="#525252">read Obsidian vault</text>
+    <text x="194" y="119" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" fill="#525252">MEMORY.md context</text>
+    <line x1="248" y1="99" x2="268" y2="99" stroke="#0f62fe" stroke-width="1.5"/><polygon points="264,94 272,99 264,104" fill="#0f62fe"/>
+    <rect x="270" y="74" width="108" height="50" rx="3" fill="#defbe6" stroke="#42be65" stroke-width="1.5"/>
+    <text x="324" y="95" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="10" font-weight="700" fill="#198038">BOB EXECUTES</text>
+    <text x="324" y="108" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" fill="#525252">bob run --mode X</text>
+    <text x="324" y="119" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" fill="#525252">tools + MCP + skills</text>
+    <line x1="378" y1="99" x2="398" y2="99" stroke="#0f62fe" stroke-width="1.5"/><polygon points="394,94 402,99 394,104" fill="#0f62fe"/>
+    <rect x="400" y="74" width="108" height="50" rx="3" fill="#f3f0ff" stroke="#8a3ffc" stroke-width="1.5"/>
+    <text x="454" y="95" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="10" font-weight="700" fill="#6929c4">WRITE MEMORY</text>
+    <text x="454" y="108" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" fill="#525252">update vault notes</text>
+    <text x="454" y="119" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" fill="#525252">update MEMORY.md</text>
+    <line x1="508" y1="99" x2="528" y2="99" stroke="#0f62fe" stroke-width="1.5"/><polygon points="524,94 532,99 524,104" fill="#0f62fe"/>
+    <rect x="530" y="74" width="108" height="50" rx="3" fill="#edf5ff" stroke="#0f62fe" stroke-width="1.5"/>
+    <text x="584" y="95" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="10" font-weight="700" fill="#0043ce">DELIVER</text>
+    <text x="584" y="108" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" fill="#525252">file + Slack + SSE</text>
+    <text x="584" y="119" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" fill="#525252">dashboard update</text>
+    <path d="M638 124 Q638 170 324 170 Q10 170 10 124" fill="none" stroke="#0f62fe" stroke-width="1.5" stroke-dasharray="5,3"/>
+    <polygon points="14,124 10,140 6,124" fill="#0f62fe"/>
+    <text x="324" y="188" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" fill="#525252" font-style="italic">Next scheduled run &mdash; agents start smarter than the last time</text>
+  </svg>
+</div>
+
+<h2>Why This Matches the IBM SDLC Vision</h2>
+<div class="grid g2">
+<div class="card" style="border-left:3px solid var(--ibm)">
+  <div class="card-icon">&#x1F504;</div>
+  <div class="card-title">Continuous, not one-shot</div>
+  <div class="card-body">The IBM SDLC is a cycle: Maintain feeds back into Plan. The agent loop is the same: Ops Agent (Maintain) feeds context into CEO Agent (Plan) every 24 hours, automatically, via Obsidian vault.</div>
+</div>
+<div class="card" style="border-left:3px solid var(--ibm)">
+  <div class="card-icon">&#x1F9E0;</div>
+  <div class="card-title">Memory enables iteration</div>
+  <div class="card-body">In the SDLC, each sprint builds on the last. With Obsidian memory, each agent run builds on the last &mdash; intel gets sharper, ops baseline more accurate, CEO synthesis more contextual.</div>
+</div>
+<div class="card" style="border-left:3px solid var(--ibm)">
+  <div class="card-icon">&#x1F465;</div>
+  <div class="card-title">Right agent for each phase</div>
+  <div class="card-body">Bob custom modes map exactly to SDLC roles: CEO = Product Owner (Plan), Intel = Architect (Design), Dev = Engineer (Develop/Test), Ops = SRE (Deploy/Maintain).</div>
+</div>
+<div class="card" style="border-left:3px solid var(--ibm)">
+  <div class="card-icon">&#x26A1;</div>
+  <div class="card-title">Autonomous acceleration</div>
+  <div class="card-body">Without the agent loop, teams need handoff meetings at every SDLC phase. With Headless Bob, handoffs happen automatically: Intel finishes at 07:00, CEO synthesizes at 08:00, Ops validates every 6h. The cycle runs itself.</div>
+</div>
+</div>
+
+<div class="callout tip"><div class="ci">&#x1F3AF;</div><p><strong>The big picture:</strong> IBM Bob is not just a code assistant. It is an AI partner across the entire SDLC. Headless Bob on a VM shows what that looks like in practice: 4 specialised agents, each owning their SDLC phase, running continuously on a 24/7 VM, remembering what they learned via Obsidian, and handing off to each other &mdash; exactly like a real engineering team, except it runs while you sleep.</p></div>
+
+<div class="pfooter"><span>IBM Bob &mdash; Harness Agent Docs</span><span>Page 9 of 11 &nbsp;&middot;&nbsp; <button onclick="show(9)">Next: Rerouting &amp; Parallel Agents &rarr;</button></span></div>
+</div>
+
+<!-- PAGE 9 -->
+<div class="page" id="p9">
+<div class="hero"><div class="hero-tag">Chapter 09</div><h1>Agent Rerouting<br><strong>&amp; Parallel Execution</strong></h1><p>How IBM Bob's Harness enables dynamic agent rerouting at runtime and parallel multi-agent execution &mdash; so a single CEO question can simultaneously fan out to multiple specialists and synthesize their results into one answer.</p></div>
+
+<h2>Two Problems, One Harness Solution</h2>
+<div class="grid g2">
+<div class="card" style="border-left:3px solid var(--r50)">
+  <div class="card-icon">&#x1F500;</div>
+  <div class="card-title" style="color:#a2191f">Without rerouting</div>
+  <div class="card-body">Agent picks wrong specialist. CEO sends a code question to Intel Agent. Intel returns irrelevant market data. User gets a wrong answer. No recovery path &mdash; the job just fails silently.</div>
+</div>
+<div class="card" style="border-left:3px solid var(--r50)">
+  <div class="card-icon">&#x23F3;</div>
+  <div class="card-title" style="color:#a2191f">Without parallel execution</div>
+  <div class="card-body">CEO delegates to Intel, waits 60s, then delegates to Ops, waits another 60s. Total latency: 2+ minutes for a question that could have been answered in 60s with parallel runs.</div>
+</div>
+</div>
+
+<h2>Pattern 1 &mdash; Agent Rerouting</h2>
+<p>The CEO agent inspects every incoming question and dynamically routes it to the most appropriate specialist &mdash; or routes to <em>multiple</em> specialists if the question spans domains. If the first agent&apos;s output is empty or off-topic, the harness re-routes to a fallback agent automatically.</p>
+
+<div style="background:var(--layer);border:1px solid var(--border);border-radius:4px;padding:20px;margin:18px 0">
+  <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--ibm);margin-bottom:14px;text-align:center">Agent Rerouting Flow</div>
+  <svg viewBox="0 0 660 260" width="100%">
+    <!-- User input -->
+    <rect x="10" y="110" width="100" height="40" rx="3" fill="#edf5ff" stroke="#0f62fe" stroke-width="1.5"/>
+    <text x="60" y="126" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="10" font-weight="700" fill="#0043ce">USER QUESTION</text>
+    <text x="60" y="140" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" fill="#525252">via HQ / API</text>
+    <line x1="110" y1="130" x2="130" y2="130" stroke="#0f62fe" stroke-width="1.5"/><polygon points="126,125 134,130 126,135" fill="#0f62fe"/>
+    <!-- CEO router -->
+    <rect x="132" y="100" width="120" height="60" rx="3" fill="#edf5ff" stroke="#0f62fe" stroke-width="2"/>
+    <text x="192" y="122" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="10" font-weight="700" fill="#0043ce">CEO AGENT</text>
+    <text x="192" y="135" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" fill="#525252">reads question</text>
+    <text x="192" y="147" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" fill="#525252">decides routing</text>
+    <!-- routing arrows out -->
+    <line x1="252" y1="118" x2="310" y2="54" stroke="#42be65" stroke-width="1.5"/><polygon points="306,48 314,56 304,58" fill="#42be65"/>
+    <line x1="252" y1="130" x2="310" y2="130" stroke="#f1c21b" stroke-width="1.5"/><polygon points="306,125 314,130 306,135" fill="#f1c21b"/>
+    <line x1="252" y1="142" x2="310" y2="206" stroke="#be95ff" stroke-width="1.5"/><polygon points="306,200 314,208 304,210" fill="#be95ff"/>
+    <!-- routing labels -->
+    <text x="272" y="80" font-family="IBM Plex Sans,sans-serif" font-size="8" fill="#198038">market/intel?</text>
+    <text x="272" y="126" font-family="IBM Plex Sans,sans-serif" font-size="8" fill="#b28600">infra/ops?</text>
+    <text x="272" y="178" font-family="IBM Plex Sans,sans-serif" font-size="8" fill="#6929c4">code/dev?</text>
+    <!-- Specialist agents -->
+    <rect x="312" y="30" width="100" height="48" rx="3" fill="#defbe6" stroke="#42be65" stroke-width="1.5"/>
+    <text x="362" y="52" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="10" font-weight="700" fill="#198038">INTEL AGENT</text>
+    <text x="362" y="65" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" fill="#525252">market research</text>
+    <rect x="312" y="106" width="100" height="48" rx="3" fill="#fcf4d6" stroke="#f1c21b" stroke-width="1.5"/>
+    <text x="362" y="128" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="10" font-weight="700" fill="#b28600">OPS AGENT</text>
+    <text x="362" y="141" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" fill="#525252">infra health</text>
+    <rect x="312" y="182" width="100" height="48" rx="3" fill="#f6f2ff" stroke="#be95ff" stroke-width="1.5"/>
+    <text x="362" y="204" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="10" font-weight="700" fill="#6929c4">DEV AGENT</text>
+    <text x="362" y="217" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" fill="#525252">code review</text>
+    <!-- results back to CEO -->
+    <line x1="412" y1="54" x2="470" y2="112" stroke="#42be65" stroke-width="1.2" stroke-dasharray="4,2"/>
+    <line x1="412" y1="130" x2="470" y2="130" stroke="#f1c21b" stroke-width="1.2" stroke-dasharray="4,2"/>
+    <line x1="412" y1="206" x2="470" y2="148" stroke="#be95ff" stroke-width="1.2" stroke-dasharray="4,2"/>
+    <!-- CEO synthesize -->
+    <rect x="470" y="100" width="110" height="60" rx="3" fill="#edf5ff" stroke="#0f62fe" stroke-width="2"/>
+    <text x="525" y="122" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="10" font-weight="700" fill="#0043ce">CEO SYNTH</text>
+    <text x="525" y="135" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" fill="#525252">combines results</text>
+    <text x="525" y="147" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" fill="#525252">single reply</text>
+    <line x1="580" y1="130" x2="600" y2="130" stroke="#0f62fe" stroke-width="1.5"/><polygon points="596,125 604,130 596,135" fill="#0f62fe"/>
+    <!-- Output -->
+    <rect x="602" y="110" width="50" height="40" rx="3" fill="#defbe6" stroke="#42be65" stroke-width="1.5"/>
+    <text x="627" y="128" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" font-weight="700" fill="#198038">OUTPUT</text>
+    <text x="627" y="141" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" fill="#525252">+ Slack</text>
+    <!-- reroute label -->
+    <rect x="312" y="242" width="200" height="18" rx="3" fill="#fff1f1" stroke="#fa4d56" stroke-width="1"/>
+    <text x="412" y="254" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="8.5" fill="#a2191f">&#x21BA; Auto-reroute if output empty or off-topic</text>
+  </svg>
+</div>
+
+<h3>Routing Logic in the CEO Agent Prompt</h3>
+<pre># ceo-agent roleDefinition (excerpt)
+You are the CEO Agent. For every question:
+
+1. CLASSIFY the question domain:
+   - market/competitors/news   → delegate to intel-agent
+   - infrastructure/services   → delegate to ops-agent
+   - code/build/deploy         → delegate to dev-agent
+   - broad/cross-domain        → delegate to ALL THREE in parallel
+
+2. DELEGATE by submitting jobs to the Harness API:
+   curl -s -X POST http://localhost:44285/jobs      -d '{"prompt":"...","mode":"intel-agent"}'
+
+3. POLL each job until completed or failed
+
+4. If a job returns empty output:
+   - Re-route same task to a different agent (fallback)
+   - Or re-submit to same agent with error context (self-heal)
+
+5. SYNTHESIZE all results into one board-level answer</pre>
+
+<h3>Rerouting on Failure</h3>
+<pre># From app.py -- rerouting when ops-agent returns empty
+if not ops_out.strip():
+    yield send("loop_retry", {"agent": "ops", "attempt": 1})
+    # Re-route: retry with self-healing prompt
+    retry_job = start_job(
+        f"SELF-HEALING RETRY: previous run failed.
+"
+        f"Error: {raw_output[:400]}
+
+"
+        f"Original task: {message}
+
+"
+        f"Analyse the error and complete the task.",
+        "ops-agent"
+    )
+    ops_out = poll_until_done(retry_job["id"])</pre>
+
+<h2>Pattern 2 &mdash; Parallel Agent Execution</h2>
+<p>The CEO agent submits <strong>multiple jobs simultaneously</strong> to the Harness <code>/jobs</code> API &mdash; one per specialist agent &mdash; then polls all of them concurrently. Intel and Ops run at the same time. Total latency = max(individual runtimes), not sum.</p>
+
+<div style="background:var(--layer);border:1px solid var(--border);border-radius:4px;padding:20px;margin:18px 0">
+  <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--ibm);margin-bottom:14px;text-align:center">Parallel Execution Timeline</div>
+  <svg viewBox="0 0 660 200" width="100%">
+    <!-- timeline axis -->
+    <line x1="120" y1="180" x2="640" y2="180" stroke="#e0e0e0" stroke-width="1.5"/>
+    <text x="120" y="196" font-family="IBM Plex Sans,sans-serif" font-size="9" fill="#a8a8a8" text-anchor="middle">t=0s</text>
+    <text x="240" y="196" font-family="IBM Plex Sans,sans-serif" font-size="9" fill="#a8a8a8" text-anchor="middle">t=20s</text>
+    <text x="360" y="196" font-family="IBM Plex Sans,sans-serif" font-size="9" fill="#a8a8a8" text-anchor="middle">t=40s</text>
+    <text x="480" y="196" font-family="IBM Plex Sans,sans-serif" font-size="9" fill="#a8a8a8" text-anchor="middle">t=60s</text>
+    <text x="600" y="196" font-family="IBM Plex Sans,sans-serif" font-size="9" fill="#a8a8a8" text-anchor="middle">t=80s</text>
+    <!-- Sequential label -->
+    <text x="10" y="36" font-family="IBM Plex Sans,sans-serif" font-size="9" font-weight="700" fill="#a2191f">Sequential</text>
+    <text x="10" y="48" font-family="IBM Plex Sans,sans-serif" font-size="8" fill="#525252">(without parallel)</text>
+    <!-- Sequential bars -->
+    <rect x="120" y="24" width="200" height="18" rx="2" fill="#defbe6" stroke="#42be65" stroke-width="1"/>
+    <text x="220" y="37" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="8.5" fill="#198038">intel-agent (0s&ndash;33s)</text>
+    <rect x="322" y="24" width="160" height="18" rx="2" fill="#fcf4d6" stroke="#f1c21b" stroke-width="1"/>
+    <text x="402" y="37" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="8.5" fill="#b28600">ops-agent (33s&ndash;60s)</text>
+    <rect x="484" y="24" width="100" height="18" rx="2" fill="#f6f2ff" stroke="#be95ff" stroke-width="1"/>
+    <text x="534" y="37" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="8.5" fill="#6929c4">ceo synth</text>
+    <!-- total sequential -->
+    <line x1="120" y1="46" x2="584" y2="46" stroke="#fa4d56" stroke-width="1" stroke-dasharray="3,2"/>
+    <text x="590" y="50" font-family="IBM Plex Sans,sans-serif" font-size="9" fill="#a2191f" font-weight="700">~80s total</text>
+    <!-- Parallel label -->
+    <text x="10" y="96" font-family="IBM Plex Sans,sans-serif" font-size="9" font-weight="700" fill="#198038">Parallel</text>
+    <text x="10" y="108" font-family="IBM Plex Sans,sans-serif" font-size="8" fill="#525252">(Harness /jobs)</text>
+    <!-- Parallel bars - all start at t=0 -->
+    <rect x="120" y="80" width="200" height="16" rx="2" fill="#defbe6" stroke="#42be65" stroke-width="1"/>
+    <text x="220" y="92" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="8.5" fill="#198038">intel-agent (0s&ndash;33s)</text>
+    <rect x="120" y="100" width="160" height="16" rx="2" fill="#fcf4d6" stroke="#f1c21b" stroke-width="1"/>
+    <text x="200" y="112" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="8.5" fill="#b28600">ops-agent (0s&ndash;27s)</text>
+    <rect x="120" y="120" width="130" height="16" rx="2" fill="#f6f2ff" stroke="#be95ff" stroke-width="1"/>
+    <text x="185" y="132" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="8.5" fill="#6929c4">dev-agent (0s&ndash;22s)</text>
+    <!-- CEO synth starts after all complete (longest = intel at 200) -->
+    <rect x="322" y="94" width="100" height="16" rx="2" fill="#edf5ff" stroke="#0f62fe" stroke-width="1.5"/>
+    <text x="372" y="106" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="8.5" fill="#0043ce">ceo synth</text>
+    <!-- total parallel -->
+    <line x1="120" y1="140" x2="422" y2="140" stroke="#42be65" stroke-width="1" stroke-dasharray="3,2"/>
+    <text x="428" y="144" font-family="IBM Plex Sans,sans-serif" font-size="9" fill="#198038" font-weight="700">~50s total</text>
+    <!-- saving label -->
+    <rect x="440" y="86" width="180" height="30" rx="3" fill="#defbe6" stroke="#42be65" stroke-width="1"/>
+    <text x="530" y="100" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" font-weight="700" fill="#198038">38% faster</text>
+    <text x="530" y="112" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="8.5" fill="#525252">saved 30s on a single question</text>
+  </svg>
+</div>
+
+<h3>Parallel Submission in Code</h3>
+<pre># Submit all specialist jobs simultaneously
+intel_job = start_job("Research IBM competitors vs GitHub Copilot", "intel-agent")
+ops_job   = start_job("Check infrastructure health and service status", "ops-agent")
+dev_job   = start_job("Review recent code changes and flag risks", "dev-agent")
+
+# Poll all three concurrently (non-blocking loop)
+jobs = {
+    "intel": intel_job["id"],
+    "ops":   ops_job["id"],
+    "dev":   dev_job["id"]
+}
+results = {}
+while len(results) < len(jobs):
+    for name, job_id in jobs.items():
+        if name in results:
+            continue
+        resp = get_job_status(job_id)
+        if resp["status"] in ("completed", "failed", "timeout"):
+            results[name] = resp.get("output", "")
+    time.sleep(3)
+
+# CEO synthesizes all three results
+intel_out = results["intel"][:2000]
+ops_out   = results["ops"][:1000]
+dev_out   = results["dev"][:1000]
+synthesis = f"Intel: {intel_out}\nOps: {ops_out}\nDev: {dev_out}"
+ceo_reply = invoke_bob(synthesis + "\n\nSynthesize into board-level summary.", "ceo-agent")</pre>
+
+<h2>Pattern 3 &mdash; Conditional Rerouting Tree</h2>
+<p>More advanced: the CEO agent builds a <em>decision tree</em> at runtime. Depending on what the first agent returns, it may trigger a second round of delegation to a different specialist.</p>
+
+<div style="background:var(--layer);border:1px solid var(--border);border-radius:4px;padding:20px;margin:18px 0">
+  <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--ibm);margin-bottom:12px;text-align:center">Conditional Rerouting Tree</div>
+  <svg viewBox="0 0 640 280" width="100%">
+    <!-- root: CEO receives question -->
+    <rect x="255" y="8" width="130" height="40" rx="3" fill="#edf5ff" stroke="#0f62fe" stroke-width="2"/>
+    <text x="320" y="24" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="10" font-weight="700" fill="#0043ce">CEO RECEIVES</text>
+    <text x="320" y="38" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" fill="#525252">incoming question</text>
+    <!-- branch down -->
+    <line x1="320" y1="48" x2="320" y2="66" stroke="#0f62fe" stroke-width="1.5"/>
+    <!-- decision diamond -->
+    <polygon points="320,66 370,90 320,114 270,90" fill="#fcf4d6" stroke="#f1c21b" stroke-width="1.5"/>
+    <text x="320" y="86" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" font-weight="700" fill="#b28600">classify</text>
+    <text x="320" y="98" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="8.5" fill="#525252">question type?</text>
+    <!-- branches out: left=intel, center=ops, right=dev, far-right=all -->
+    <line x1="270" y1="90" x2="80" y2="140" stroke="#42be65" stroke-width="1.5"/>
+    <line x1="300" y1="114" x2="220" y2="140" stroke="#f1c21b" stroke-width="1.5"/>
+    <line x1="340" y1="114" x2="400" y2="140" stroke="#be95ff" stroke-width="1.5"/>
+    <line x1="370" y1="90" x2="550" y2="140" stroke="#fa4d56" stroke-width="1.5"/>
+    <text x="140" y="132" font-family="IBM Plex Sans,sans-serif" font-size="8" fill="#198038">market?</text>
+    <text x="240" y="132" font-family="IBM Plex Sans,sans-serif" font-size="8" fill="#b28600">infra?</text>
+    <text x="360" y="132" font-family="IBM Plex Sans,sans-serif" font-size="8" fill="#6929c4">code?</text>
+    <text x="460" y="132" font-family="IBM Plex Sans,sans-serif" font-size="8" fill="#a2191f">complex?</text>
+    <!-- specialist boxes -->
+    <rect x="30"  y="140" width="100" height="36" rx="3" fill="#defbe6" stroke="#42be65" stroke-width="1.5"/>
+    <text x="80"  y="158" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="10" font-weight="700" fill="#198038">intel-agent</text>
+    <text x="80"  y="169" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="8.5" fill="#525252">web research</text>
+    <rect x="170" y="140" width="100" height="36" rx="3" fill="#fcf4d6" stroke="#f1c21b" stroke-width="1.5"/>
+    <text x="220" y="158" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="10" font-weight="700" fill="#b28600">ops-agent</text>
+    <text x="220" y="169" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="8.5" fill="#525252">infra check</text>
+    <rect x="350" y="140" width="100" height="36" rx="3" fill="#f6f2ff" stroke="#be95ff" stroke-width="1.5"/>
+    <text x="400" y="158" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="10" font-weight="700" fill="#6929c4">dev-agent</text>
+    <text x="400" y="169" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="8.5" fill="#525252">code review</text>
+    <!-- ALL THREE parallel box -->
+    <rect x="490" y="132" width="130" height="52" rx="3" fill="#fff1f1" stroke="#fa4d56" stroke-width="1.5"/>
+    <text x="555" y="150" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" font-weight="700" fill="#a2191f">ALL 3 IN PARALLEL</text>
+    <text x="555" y="163" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="8.5" fill="#525252">intel + ops + dev</text>
+    <text x="555" y="176" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="8.5" fill="#525252">running simultaneously</text>
+    <!-- results converge -->
+    <line x1="80"  y1="176" x2="80"  y2="210" stroke="#a8a8a8" stroke-width="1" stroke-dasharray="3,2"/>
+    <line x1="220" y1="176" x2="220" y2="210" stroke="#a8a8a8" stroke-width="1" stroke-dasharray="3,2"/>
+    <line x1="400" y1="176" x2="400" y2="210" stroke="#a8a8a8" stroke-width="1" stroke-dasharray="3,2"/>
+    <line x1="555" y1="184" x2="555" y2="210" stroke="#a8a8a8" stroke-width="1" stroke-dasharray="3,2"/>
+    <line x1="80"  y1="210" x2="555" y2="210" stroke="#a8a8a8" stroke-width="1"/>
+    <line x1="320" y1="210" x2="320" y2="226" stroke="#0f62fe" stroke-width="1.5"/>
+    <!-- CEO synth -->
+    <rect x="240" y="226" width="160" height="38" rx="3" fill="#edf5ff" stroke="#0f62fe" stroke-width="2"/>
+    <text x="320" y="244" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="10" font-weight="700" fill="#0043ce">CEO SYNTHESIZES</text>
+    <text x="320" y="257" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" fill="#525252">one unified reply + Slack</text>
+  </svg>
+</div>
+
+<h2>Live Config: BOB_MAX_JOBS</h2>
+<p>The Harness server controls how many Bob subprocesses can run simultaneously via the <code>BOB_MAX_JOBS</code> environment variable:</p>
+<pre># /data/bob-harness/.env
+BOB_MAX_JOBS=200          # up to 200 parallel Bob jobs on this VM
+BOBSHELL_API_KEY=...      # maps to BOB_API_KEY for each subprocess
+BOB_MODE=unrestricted-dev # default permission mode</pre>
+<div class="callout info"><div class="ci">&#x1F4A1;</div><p><strong>On this VM (Standard_D16s_v5):</strong> 16 vCPUs, 64GB RAM. With <code>BOB_MAX_JOBS=200</code>, the Harness can run up to 200 parallel Bob agent jobs. In practice, 3&ndash;5 run simultaneously during a CEO delegation cycle. The VM has headroom to scale to dozens of concurrent agents.</p></div>
+
+<h2>Rerouting vs Retry vs Parallel &mdash; When to Use Each</h2>
+<table class="cmp"><thead><tr><th>Scenario</th><th>Pattern to use</th><th>How it works</th></tr></thead><tbody>
+<tr><td>Wrong agent picked for the question</td><td>Rerouting</td><td>CEO classifies and re-delegates to correct specialist. Old job discarded.</td></tr>
+<tr><td>Agent returned empty or garbled output</td><td>Self-healing retry</td><td>Same agent re-invoked with error context injected into the prompt.</td></tr>
+<tr><td>Question spans multiple domains</td><td>Parallel execution</td><td>CEO fans out to all relevant agents simultaneously, polls concurrently, synthesizes results.</td></tr>
+<tr><td>One agent consistently fails</td><td>Fallback reroute</td><td>After N retries, route to a different agent mode as fallback.</td></tr>
+<tr><td>High-priority question needing full picture</td><td>Parallel + synthesis</td><td>All 3 specialists run in parallel; CEO synthesis waits for all to complete before replying.</td></tr>
+</tbody></table>
+
+<div class="callout tip"><div class="ci">&#x26A1;</div><p><strong>The result:</strong> A user asking a complex question like <em>"What is our competitive position and are we at infrastructure risk?"</em> triggers intel-agent AND ops-agent simultaneously. Both run in parallel. CEO synthesizes the combined output in one reply &mdash; delivered to the HQ dashboard and Slack in under 90 seconds, with no human coordination required.</p></div>
+
+<div class="pfooter"><span>IBM Bob &mdash; Harness Agent Docs</span><span>Page 10 of 11 &nbsp;&middot;&nbsp; <button onclick="show(10)">Next: Harness On-Prem &rarr;</button></span></div>
+</div>
+
+<!-- PAGE 10 -->
+<div class="page" id="p10">
+<div class="hero"><div class="hero-tag">Chapter 10</div><h1>What if Harness<br><strong>On-Prem?</strong></h1><p>IBM Bob has a fully supported on-premises deployment path. This chapter explores what the Harness pattern looks like when Bob runs inside your own datacenter &mdash; air-gapped, on OpenShift Container Platform, with local model hosting and zero cloud dependency.</p></div>
+
+<h2>IBM Bob On-Prem Solution Architecture</h2>
+<p>The same Headless Bob pattern &mdash; custom modes, Harness API, scheduled agents &mdash; works entirely on-prem. The only difference is where the Bob backend and model router run.</p>
+
+<div style="background:var(--layer);border:1px solid var(--border);border-radius:4px;padding:28px 24px;margin:20px 0">
+  <div style="font-size:13px;font-weight:700;color:#1a3a6b;margin-bottom:2px;text-align:center">IBM Bob On-Prem Solution Architecture</div>
+  <div style="font-size:10px;color:var(--t3);text-align:center;margin-bottom:20px">Client facing &nbsp;&mdash;&nbsp; Current view pre-GA, subject to change</div>
+  <svg viewBox="0 0 820 400" width="100%" style="max-width:820px;display:block;margin:0 auto">
+
+    <!-- Column headers -->
+    <text x="130" y="22" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="11" fill="#525252">IBM Bob Base Components</text>
+    <text x="430" y="22" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="11" fill="#525252">Bob Services: On-prem</text>
+    <text x="700" y="22" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="11" fill="#525252">Model Hosting Options</text>
+
+    <!-- ── LEFT: Base Components ── -->
+    <rect x="20" y="120" width="220" height="200" rx="4" fill="white" stroke="#8a9ab5" stroke-width="1.5"/>
+    <!-- Bob IDE & BobShell -->
+    <rect x="34" y="134" width="140" height="46" rx="3" fill="#4472c4"/>
+    <text x="104" y="153" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="11" font-weight="700" fill="white">Bob IDE &amp;</text>
+    <text x="104" y="167" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="11" font-weight="700" fill="white">BobShell</text>
+    <!-- ACP label -->
+    <text x="104" y="192" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="10" fill="#333">ACP</text>
+    <!-- Windows / MacOS pills -->
+    <rect x="182" y="148" width="48" height="18" rx="3" fill="#4472c4"/>
+    <text x="206" y="160" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" font-weight="600" fill="white">Windows</text>
+    <rect x="182" y="170" width="48" height="18" rx="3" fill="#4472c4"/>
+    <text x="206" y="182" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" font-weight="600" fill="white">MacOS</text>
+    <!-- Other IDEs -->
+    <rect x="34" y="200" width="140" height="40" rx="3" fill="#4472c4"/>
+    <text x="104" y="216" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="10" font-weight="700" fill="white">Other IDEs**</text>
+    <text x="104" y="230" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" fill="#d0e2ff">(VSCode, IntelliJ,...)</text>
+    <text x="130" y="256" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="8.5" fill="#666">** not available today</text>
+
+    <!-- arrow left → centre -->
+    <line x1="242" y1="220" x2="282" y2="220" stroke="#4472c4" stroke-width="2.5"/>
+    <polygon points="278,215 288,220 278,225" fill="#4472c4"/>
+
+    <!-- ── CENTRE: Bob Services On-prem ── -->
+    <rect x="284" y="38" width="300" height="324" rx="4" fill="white" stroke="#8a9ab5" stroke-width="1.5"/>
+    <!-- IBM Bob Backend (large blue) -->
+    <rect x="296" y="52" width="170" height="200" rx="3" fill="#4472c4"/>
+    <text x="381" y="130" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="14" font-weight="700" fill="white">IBM Bob</text>
+    <text x="381" y="148" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="14" font-weight="700" fill="white">Backend</text>
+    <!-- SaaS / x86 OCP pills inside -->
+    <rect x="472" y="66" width="96" height="26" rx="3" fill="#4472c4"/>
+    <text x="520" y="83" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="11" font-weight="600" fill="white">SaaS</text>
+    <rect x="472" y="98" width="96" height="26" rx="3" fill="#4472c4"/>
+    <text x="520" y="115" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="11" font-weight="600" fill="white">x86 OCP</text>
+    <!-- Model Router Gateway box (darker blue inset) -->
+    <rect x="306" y="168" width="148" height="76" rx="3" fill="#1f3d7a"/>
+    <text x="380" y="198" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="11" font-weight="700" fill="white">Model Router</text>
+    <text x="380" y="213" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="11" font-weight="700" fill="white">Gateway</text>
+    <!-- arrow centre → right (solid blue for local) -->
+    <line x1="470" y1="152" x2="592" y2="152" stroke="#4472c4" stroke-width="2.5"/>
+    <polygon points="588,147 598,152 588,157" fill="#4472c4"/>
+    <!-- arrow centre → right (dashed gold for subscription) -->
+    <line x1="456" y1="206" x2="592" y2="206" stroke="#c8a400" stroke-width="2" stroke-dasharray="6,4"/>
+    <polygon points="588,201 598,206 588,211" fill="#c8a400"/>
+    <text x="524" y="222" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="8.5" fill="#c8a400">&lt;Subscription API-Key&gt;</text>
+    <!-- Harness layer label -->
+    <rect x="296" y="264" width="270" height="84" rx="3" fill="#edf5ff" stroke="#a6c8ff" stroke-width="1.5"/>
+    <text x="431" y="285" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="10" font-weight="700" fill="#0043ce">+ Harness Layer (your addition)</text>
+    <text x="431" y="300" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" fill="#525252">FastAPI /jobs &bull; /schedules &bull; SSE</text>
+    <text x="431" y="314" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" fill="#525252">Runs on same OCP cluster or sidecar VM</text>
+    <text x="431" y="328" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" fill="#525252">bob run --mode X via subprocess &bull; all ports internal</text>
+
+    <!-- ── RIGHT: Model Hosting Options ── -->
+    <!-- Local Model Collection box -->
+    <rect x="600" y="38" width="210" height="140" rx="4" fill="white" stroke="#8a9ab5" stroke-width="1.5"/>
+    <rect x="614" y="54" width="118" height="110" rx="3" fill="#1f3d7a"/>
+    <text x="673" y="100" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="11" font-weight="700" fill="white">Local Model</text>
+    <text x="673" y="116" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="11" font-weight="700" fill="white">Collection</text>
+    <text x="673" y="132" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="10" fill="#a6c8ff">(Air-gapped)</text>
+    <rect x="738" y="68" width="60" height="22" rx="3" fill="#4472c4"/>
+    <text x="768" y="82" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" font-weight="600" fill="white">x86 GPUs</text>
+    <rect x="738" y="96" width="60" height="22" rx="3" fill="#4472c4"/>
+    <text x="768" y="110" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" font-weight="600" fill="white">Fusion HCI</text>
+
+    <!-- Frontier Model box -->
+    <rect x="600" y="192" width="210" height="110" rx="4" fill="white" stroke="#8a9ab5" stroke-width="1.5"/>
+    <rect x="614" y="206" width="118" height="82" rx="3" fill="#fef9e7" stroke="#e0c84a" stroke-width="1.5"/>
+    <text x="673" y="244" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="11" font-weight="700" fill="#7c5c00">Frontier</text>
+    <text x="673" y="260" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="11" font-weight="700" fill="#7c5c00">Model</text>
+    <rect x="738" y="228" width="60" height="22" rx="3" fill="#4472c4"/>
+    <text x="768" y="242" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" font-weight="600" fill="white">Cloud Hosted</text>
+
+    <!-- footnote -->
+    <text x="10" y="386" font-family="IBM Plex Sans,sans-serif" font-size="8.5" fill="#888">*Supported models for both deployment scenarios will be published later in 3Q</text>
+    <text x="10" y="398" font-family="IBM Plex Sans,sans-serif" font-size="8" fill="#888">&#169; 2026 IBM Corporation</text>
+    <text x="500" y="398" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="8.5" font-weight="700" fill="#cc0000">CURRENT VIEW PRE-GA, SUBJECT TO CHANGE</text>
+  </svg>
+</div>
+
+<h2>What Changes On-Prem vs Cloud VM</h2>
+<table class="cmp"><thead><tr><th>Component</th><th>Cloud VM (current)</th><th>On-Prem (OCP)</th></tr></thead><tbody>
+<tr><td>Bob binary</td><td>Installed on Azure RHEL VM via npm</td><td>Deployed as container on x86 OCP cluster via ACP</td></tr>
+<tr><td>Bob Backend</td><td>bob.service (systemd)</td><td>IBM Bob Backend on OCP &mdash; SaaS or x86 OCP deployment</td></tr>
+<tr><td>Model router</td><td>Bob routes to IBM cloud model endpoint</td><td>Model Router Gateway routes to Local Model Collection (air-gapped) or Frontier Model (subscription API key)</td></tr>
+<tr><td>Model hosting</td><td>IBM cloud-hosted frontier model</td><td>Local Collection on x86 GPUs / Fusion HCI &mdash; fully air-gapped, no internet required</td></tr>
+<tr><td>Harness API</td><td>FastAPI on port :44285</td><td>Same FastAPI server, deployed as OCP sidecar pod or separate VM inside the datacenter</td></tr>
+<tr><td>Custom modes</td><td>~/.bob/settings/custom_modes.yaml</td><td>Same YAML, mounted as ConfigMap or volume in the OCP deployment</td></tr>
+<tr><td>Schedules</td><td>schedules.json on VM disk</td><td>Same pattern, schedules.json on persistent volume claim (PVC)</td></tr>
+<tr><td>Obsidian vault</td><td>/data/vault on VM disk</td><td>Mounted PVC or NFS share &mdash; same MCP config, same vault structure</td></tr>
+<tr><td>Data residency</td><td>Azure region</td><td>100% on-prem &mdash; no data leaves the datacenter, air-gapped option available</td></tr>
+<tr><td>Network access</td><td>Public IP, ports open in NSG</td><td>Internal cluster network only &mdash; Harness API exposed via OpenShift Route (HTTPS by default)</td></tr>
+</tbody></table>
+
+<h2>What Stays Exactly the Same</h2>
+<div class="grid g3">
+<div class="card ib">
+  <div class="card-icon">&#x1F9E0;</div>
+  <div class="card-title">Custom modes &amp; personas</div>
+  <div class="card-body"><code>custom_modes.yaml</code> is portable. CEO/Intel/Ops/Dev agents work identically on-prem &mdash; same <code>roleDefinition</code>, same <code>groups</code>, same <code>bob run --mode</code> invocation.</div>
+</div>
+<div class="card ib">
+  <div class="card-icon">&#x2699;&#xFE0F;</div>
+  <div class="card-title">Harness REST API</div>
+  <div class="card-body"><code>POST /jobs</code>, <code>GET /schedules</code>, SSE streams &mdash; the FastAPI server is infrastructure-agnostic. It runs on OCP the same way it runs on a VM.</div>
+</div>
+<div class="card ib">
+  <div class="card-icon">&#x1F4CB;</div>
+  <div class="card-title">Agent loop &amp; memory</div>
+  <div class="card-body">Trigger → Load Memory → Execute → Write Memory → Deliver. The loop is identical. Obsidian MCP points to a PVC instead of a local disk path.</div>
+</div>
+<div class="card ib">
+  <div class="card-icon">&#x1F4E6;</div>
+  <div class="card-title">MCP integrations</div>
+  <div class="card-body">Firecrawl, Obsidian, Postgres, MongoDB MCPs work on-prem. Internal Firecrawl instance for air-gapped web scraping; all databases stay inside the cluster.</div>
+</div>
+<div class="card ib">
+  <div class="card-icon">&#x23F1;</div>
+  <div class="card-title">Cron schedules</div>
+  <div class="card-body">Harness <code>/schedules</code> API is unchanged. Schedules persist in a PVC-backed JSON file. Alternatively, use OCP CronJob resources to trigger the Harness API on schedule.</div>
+</div>
+<div class="card ib">
+  <div class="card-icon">&#x1F4CA;</div>
+  <div class="card-title">HQ Dashboard</div>
+  <div class="card-body">Flask HQ app deploys as an OCP pod. SSE streams work inside the cluster. OpenShift Route provides HTTPS with a proper cert &mdash; no self-signed cert needed.</div>
+</div>
+</div>
+
+<h2>On-Prem Harness Deployment on OCP</h2>
+<pre># Example OCP deployment manifest (simplified)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bob-harness
+  namespace: bob-agents
+spec:
+  replicas: 1
+  template:
+    spec:
+      containers:
+      - name: harness
+        image: your-registry/bob-harness:latest
+        ports:
+        - containerPort: 44285
+        env:
+        - name: BOB_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: bob-secrets
+              key: api-key
+        - name: BOB_MAX_JOBS
+          value: "50"
+        volumeMounts:
+        - name: vault
+          mountPath: /data/vault
+        - name: company
+          mountPath: /data/company
+      volumes:
+      - name: vault
+        persistentVolumeClaim:
+          claimName: obsidian-vault-pvc
+      - name: company
+        persistentVolumeClaim:
+          claimName: company-data-pvc
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: bob-harness-route
+spec:
+  tls:
+    termination: edge          # HTTPS at the OCP ingress, no self-signed needed
+  to:
+    kind: Service
+    name: bob-harness</pre>
+
+<div class="callout tip"><div class="ci">&#x1F3AF;</div><p><strong>The on-prem advantage:</strong> With the Local Model Collection on x86 GPUs or Fusion HCI, the entire Headless Bob system &mdash; agents, harness, memory, dashboards, model inference &mdash; runs completely inside your datacenter. No data leaves. No cloud subscription needed beyond the Bob license. The same multi-agent company simulator that runs on this Azure VM can run air-gapped in a bank, hospital, or government facility.</p></div>
+
+<h2>Migration Path: Cloud VM → On-Prem OCP</h2>
+<div class="steps">
+<div class="step"><div class="snum">1</div><div><div class="stitle">Package the Harness as a container image</div><div class="sdesc">Wrap <code>server.py</code> (FastAPI) and <code>app.py</code> (Flask HQ) into Docker images. The Bob binary is installed in the image via <code>npm install -g @ibm/bob</code> during build. Push to your internal OCP registry.</div></div></div>
+<div class="step"><div class="snum">2</div><div><div class="stitle">Port custom_modes.yaml as a ConfigMap</div><div class="sdesc">Mount <code>custom_modes.yaml</code> as an OCP ConfigMap at <code>/root/.bob/settings/custom_modes.yaml</code> inside the container. Custom modes, roleDefinitions, and permission groups are identical.</div></div></div>
+<div class="step"><div class="snum">3</div><div><div class="stitle">Migrate /data/ to Persistent Volume Claims</div><div class="sdesc">Create PVCs for <code>/data/vault/</code> (Obsidian), <code>/data/company/</code> (agent reports), and <code>/data/my-dashboard/</code> (HTML dashboards). Copy existing data from the VM using <code>oc rsync</code>.</div></div></div>
+<div class="step"><div class="snum">4</div><div><div class="snum" style="background:var(--g60)">4</div><div class="stitle">Point Bob to the on-prem Model Router Gateway</div><div class="sdesc">Update <code>BOB_API_KEY</code> to the on-prem subscription key. Bob's Model Router Gateway handles routing to the Local Model Collection or Frontier Model &mdash; the Harness code is unchanged.</div></div></div>
+<div class="step"><div class="snum">5</div><div><div class="stitle">Expose via OpenShift Route (HTTPS automatic)</div><div class="sdesc">Create OCP Routes for the Harness API and HQ Dashboard. OpenShift provides TLS termination automatically &mdash; no nginx, no self-signed certs, no NSG rules. Just <code>oc expose</code>.</div></div></div>
+</div>
+
+<div class="pfooter"><span>IBM Bob &mdash; Harness Agent Docs</span><span>End of docs &nbsp;&middot;&nbsp; <button onclick="show(0)">&#x2191; Back to start</button></span></div>
+</div>
+<script>
+function show(n){
+  document.querySelectorAll(".page").forEach(function(p,i){p.className="page"+(i===n?" on":"");});
+  document.querySelectorAll(".tab").forEach(function(t,i){t.className="tab"+(i===n?" on":"");});
+  window.scrollTo(0,0);
+}
+</script>
+</div><!-- /content -->
+</body>
+</html>
