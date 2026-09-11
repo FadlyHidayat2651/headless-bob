@@ -93,12 +93,31 @@ def load_agent_descriptions():
 
 AGENT_DESCS = load_agent_descriptions()
 
+# Lines that are Bob chrome, not content — strip before any extraction
+_NOISE_PREFIXES = (
+    'YOLO mode is enabled',
+    'All tool calls will be automatically approved',
+    '[ERROR] Error during discovery',
+    '[WARN]',
+)
+
+def _strip_noise(text: str) -> str:
+    """Remove Bob chrome lines (YOLO banner, MCP errors) from output."""
+    kept = []
+    for line in text.split('\n'):
+        stripped = line.strip()
+        if any(stripped.startswith(p) for p in _NOISE_PREFIXES):
+            continue
+        kept.append(line)
+    return '\n'.join(kept)
+
 def extract_reply(raw):
     """
     Bob output has lines padded to 120 chars.
     Section separators use U+2500 BOX DRAWING LIGHT HORIZONTAL (─), NOT ASCII hyphen (-).
     We ONLY break on ─────, never on markdown --- which appears inside content.
     """
+    raw = _strip_noise(raw)
     # Strip 120-char right-padding Bob adds to every line
     lines = [l.rstrip() for l in raw.split('\n')]
 
@@ -448,11 +467,21 @@ def chat():
                 ]:
                     content = read_file(fname)
                     if content: parts.append(f"{label}:\n{content[:800]}")
+                # If still no data files exist (fresh local deploy), give CEO enough
+                # system context to produce a meaningful answer without hallucinating
+                if len(parts) == 1:
+                    parts.append(
+                        "System context: This is the Headless Bob HQ — a multi-agent orchestration "
+                        "system running IBM Bob Shell on a local machine. Agents: CEO (orchestrator), "
+                        "Intel (web research), Ops (infra health), Dev (engineering). "
+                        "No previous agent reports exist yet. Generate a concise placeholder board "
+                        "report explaining the system is freshly deployed and awaiting first runs."
+                    )
 
             ceo_prompt = (
-                "You are the CEO Agent. Synthesize the following sub-agent results into a sharp, "
-                "data-driven executive answer. Use markdown. Be concise but specific. "
-                "Do NOT truncate — provide the complete answer.\n\n"
+                "You are the CEO Agent of Headless Bob HQ — a multi-agent AI orchestration system. "
+                "Synthesize the following into a sharp, data-driven executive answer. "
+                "Use markdown. Be concise but specific. Do NOT say data is missing — work with what you have.\n\n"
                 + "\n\n".join(parts)
             )
             ceo_out = invoke_bob_via_job(ceo_prompt, 'ceo-agent', timeout=300)
