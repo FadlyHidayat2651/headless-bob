@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sales Cycle Dashboard</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      border-bottom: 1px solid #2d3748;
+      padding-bottom: 1.25rem;
+    }
+    header h1 { font-size: 1.6rem; font-weight: 700; color: #f0f4ff; }
+
+    .badge {
+      background: #22c55e22; color: #22c55e;
+      border: 1px solid #22c55e55; border-radius: 9999px;
+      font-size: 0.7rem; font-weight: 600; padding: 0.2rem 0.6rem;
+      letter-spacing: 0.05em; text-transform: uppercase;
+    }
+    .badge-love {
+      background: #ec489922; color: #ec4899;
+      border: 1px solid #ec489955; border-radius: 9999px;
+      font-size: 0.7rem; font-weight: 600; padding: 0.2rem 0.6rem;
+      letter-spacing: 0.05em;
+    }
+    .timestamp { margin-left: auto; font-size: 0.8rem; color: #718096; }
+
+    /* nav link back */
+    .nav-back {
+      font-size: 0.8rem; color: #3b82f6; text-decoration: none;
+      border: 1px solid #3b82f633; border-radius: 6px; padding: 0.3rem 0.7rem;
+      transition: background 0.2s;
+    }
+    .nav-back:hover { background: #3b82f622; }
+
+    /* KPI row */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+    .kpi-card {
+      background: #1a1d2e; border: 1px solid #2d3748;
+      border-radius: 12px; padding: 1.25rem 1.5rem;
+      display: flex; flex-direction: column; gap: 0.3rem;
+      transition: border-color 0.2s;
+    }
+    .kpi-card:hover { border-color: #4a5568; }
+    .kpi-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: #718096; font-weight: 600; }
+    .kpi-value { font-size: 2rem; font-weight: 800; color: #f0f4ff; line-height: 1; }
+    .kpi-sub   { font-size: 0.78rem; color: #718096; }
+    .kpi-icon  { font-size: 1.4rem; margin-bottom: 0.2rem; }
+
+    /* Funnel */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+    @media (max-width: 820px) { .two-col { grid-template-columns: 1fr; } }
+
+    .panel {
+      background: #1a1d2e; border: 1px solid #2d3748;
+      border-radius: 12px; padding: 1.25rem 1.5rem;
+    }
+    .panel h2 {
+      font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.08em;
+      color: #718096; font-weight: 600; margin-bottom: 1rem;
+    }
+
+    /* Funnel bars */
+    .funnel-row {
+      display: flex; align-items: center; gap: 0.75rem;
+      margin-bottom: 0.7rem;
+    }
+    .funnel-label { font-size: 0.8rem; color: #cbd5e0; width: 110px; flex-shrink: 0; }
+    .funnel-bar-wrap {
+      flex: 1; height: 22px; background: #2d3748; border-radius: 4px; overflow: hidden;
+    }
+    .funnel-bar {
+      height: 100%; border-radius: 4px;
+      display: flex; align-items: center; padding-left: 0.5rem;
+      font-size: 0.7rem; font-weight: 700; color: #fff;
+      transition: width 0.9s ease;
+      white-space: nowrap; overflow: hidden;
+    }
+    .funnel-count { font-size: 0.78rem; color: #718096; width: 42px; text-align: right; flex-shrink: 0; }
+
+    /* Revenue chart */
+    .chart-wrap {
+      display: flex; align-items: flex-end; gap: 0.5rem;
+      height: 140px; margin-top: 0.5rem;
+    }
+    .bar-col {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: flex-end; gap: 0.3rem;
+    }
+    .bar-col-bar {
+      width: 100%; border-radius: 4px 4px 0 0;
+      transition: height 0.9s ease;
+      min-height: 4px;
+    }
+    .bar-col-label { font-size: 0.65rem; color: #718096; text-align: center; }
+    .bar-col-val   { font-size: 0.65rem; color: #94a3b8; text-align: center; }
+
+    /* Win/Loss donut */
+    .donut-wrap {
+      display: flex; align-items: center; justify-content: center;
+      gap: 2rem; margin-top: 0.5rem;
+    }
+    .donut-legend { display: flex; flex-direction: column; gap: 0.5rem; }
+    .legend-item  { display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; }
+    .legend-dot   { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+    /* Deals table */
+    .full-panel {
+      background: #1a1d2e; border: 1px solid #2d3748;
+      border-radius: 12px; padding: 1.25rem 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+    .full-panel h2 {
+      font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.08em;
+      color: #718096; font-weight: 600; margin-bottom: 1rem;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    th {
+      text-align: left; color: #718096; font-weight: 600;
+      font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em;
+      padding: 0.4rem 0.75rem; border-bottom: 1px solid #2d3748;
+    }
+    td { padding: 0.55rem 0.75rem; border-bottom: 1px solid #1e2231; color: #e2e8f0; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #20243a; }
+    .mono { font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 0.82rem; }
+
+    .stage-chip {
+      display: inline-block; padding: 0.2rem 0.55rem;
+      border-radius: 9999px; font-size: 0.68rem; font-weight: 700;
+      letter-spacing: 0.04em; text-transform: uppercase;
+    }
+
+    /* Prob bar inside table */
+    .prob-wrap { display: flex; align-items: center; gap: 0.5rem; }
+    .prob-bar-bg { flex: 1; height: 6px; background: #2d3748; border-radius: 9999px; overflow: hidden; }
+    .prob-bar-fill { height: 100%; border-radius: 9999px; }
+    .prob-pct { font-size: 0.72rem; color: #94a3b8; width: 30px; text-align: right; }
+
+    /* Cycle time bar */
+    .refresh-btn {
+      background: #ec4899; color: white; border: none;
+      border-radius: 8px; padding: 0.45rem 1rem;
+      font-size: 0.82rem; font-weight: 600; cursor: pointer;
+      transition: background 0.2s; margin-left: 0.75rem;
+    }
+    .refresh-btn:hover { background: #db2777; }
+
+    .err { color: #ef4444; font-size: 0.85rem; padding: 1rem; text-align: center; }
+  </style>
+</head>
+<body>
+  <header>
+    <span style="font-size:1.6rem">💖</span>
+    <h1>Sales Cycle Dashboard</h1>
+    <span class="badge-love">♥ Love</span>
+    <span class="badge">● Live</span>
+    <span class="timestamp" id="ts">—</span>
+    <a href="/" class="nav-back">← System</a>
+    <button class="refresh-btn" onclick="load()">↻ Refresh</button>
+  </header>
+
+  <!-- KPI row -->
+  <div class="kpi-grid" id="kpi-grid">
+    <div class="kpi-card"><div class="kpi-icon">🏆</div><div class="kpi-label">Total Pipeline</div><div class="kpi-value" id="kpi-pipeline">—</div><div class="kpi-sub">Active deals value</div></div>
+    <div class="kpi-card"><div class="kpi-icon">💰</div><div class="kpi-label">Closed Won</div><div class="kpi-value" id="kpi-won">—</div><div class="kpi-sub">This period</div></div>
+    <div class="kpi-card"><div class="kpi-icon">🎯</div><div class="kpi-label">Win Rate</div><div class="kpi-value" id="kpi-winrate">—</div><div class="kpi-sub">Prospecting → Closed Won</div></div>
+    <div class="kpi-card"><div class="kpi-icon">⏳</div><div class="kpi-label">Avg Cycle</div><div class="kpi-value" id="kpi-cycle">—</div><div class="kpi-sub">Days to close</div></div>
+  </div>
+
+  <!-- Funnel + Revenue -->
+  <div class="two-col">
+    <div class="panel">
+      <h2>🔽 Sales Funnel — Deals Count</h2>
+      <div id="funnel-rows">Loading…</div>
+    </div>
+    <div class="panel">
+      <h2>📈 Revenue Trend (Last 6 Months)</h2>
+      <div class="chart-wrap" id="rev-chart">Loading…</div>
+    </div>
+  </div>
+
+  <!-- Win/Loss + Value funnel -->
+  <div class="two-col">
+    <div class="panel">
+      <h2>🥧 Win / Loss Ratio</h2>
+      <div class="donut-wrap">
+        <svg id="donut-svg" width="110" height="110" viewBox="0 0 110 110"></svg>
+        <div class="donut-legend" id="donut-legend"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>💵 Pipeline Value by Stage</h2>
+      <div id="value-bars">Loading…</div>
+    </div>
+  </div>
+
+  <!-- Deals table -->
+  <div class="full-panel">
+    <h2>🗂️ Active Deals Pipeline</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Deal</th>
+          <th>Rep</th>
+          <th>Stage</th>
+          <th>Value (USD)</th>
+          <th>Days In</th>
+          <th>Probability</th>
+        </tr>
+      </thead>
+      <tbody id="deals-body">
+        <tr><td colspan="6" style="color:#718096;text-align:center;padding:1rem">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    // ── helpers ──────────────────────────────────────────────────────
+    function fmtUSD(n) {
+      if (n >= 1_000_000) return '$' + (n/1_000_000).toFixed(2) + 'M';
+      if (n >= 1_000)     return '$' + (n/1_000).toFixed(1) + 'K';
+      return '$' + n;
+    }
+
+    // Stage chip colors
+    const CHIP_COLORS = {
+      "Prospecting":   { bg: "#3b82f622", color: "#60a5fa", border: "#3b82f644" },
+      "Qualification": { bg: "#a855f722", color: "#c084fc", border: "#a855f744" },
+      "Proposal":      { bg: "#f59e0b22", color: "#fbbf24", border: "#f59e0b44" },
+      "Negotiation":   { bg: "#f9731622", color: "#fb923c", border: "#f9731644" },
+      "Closed Won":    { bg: "#22c55e22", color: "#4ade80", border: "#22c55e44" },
+      "Closed Lost":   { bg: "#ef444422", color: "#f87171", border: "#ef444444" },
+    };
+
+    function stageChip(s) {
+      const c = CHIP_COLORS[s] || { bg: "#ffffff11", color: "#e2e8f0", border: "#ffffff22" };
+      return `<span class="stage-chip" style="background:${c.bg};color:${c.color};border:1px solid ${c.border}">${s}</span>`;
+    }
+
+    // ── donut chart ─────────────────────────────────────────────────
+    function drawDonut(wonPct, lostPct) {
+      const svg = document.getElementById('donut-svg');
+      const cx = 55, cy = 55, r = 40, sw = 16;
+      const circ = 2 * Math.PI * r;
+
+      const data = [
+        { pct: wonPct,  color: "#22c55e", label: "Won" },
+        { pct: lostPct, color: "#ef4444", label: "Lost" },
+        { pct: Math.max(0, 100 - wonPct - lostPct), color: "#2d3748", label: "Active" },
+      ];
+
+      let offset = 0;
+      let paths = '';
+      for (const d of data) {
+        const len = (d.pct / 100) * circ;
+        paths += `<circle cx="${cx}" cy="${cy}" r="${r}"
+          fill="none" stroke="${d.color}" stroke-width="${sw}"
+          stroke-dasharray="${len} ${circ - len}"
+          stroke-dashoffset="${-offset}"
+          transform="rotate(-90 ${cx} ${cy})" />`;
+        offset += len;
+      }
+      // center text
+      paths += `<text x="${cx}" y="${cy - 4}" text-anchor="middle" fill="#f0f4ff" font-size="13" font-weight="700">${wonPct.toFixed(1)}%</text>`;
+      paths += `<text x="${cx}" y="${cy + 12}" text-anchor="middle" fill="#718096" font-size="9">Win Rate</text>`;
+      svg.innerHTML = paths;
+
+      // legend
+      const legend = document.getElementById('donut-legend');
+      legend.innerHTML = data.map(d => `
+        <div class="legend-item">
+          <div class="legend-dot" style="background:${d.color}"></div>
+          <span>${d.label} — ${d.pct.toFixed(1)}%</span>
+        </div>`).join('');
+    }
+
+    // ── main render ─────────────────────────────────────────────────
+    function render(d) {
+      document.getElementById('ts').textContent = 'Updated ' + new Date().toLocaleTimeString();
+
+      // KPIs
+      document.getElementById('kpi-pipeline').textContent = fmtUSD(d.total_pipeline);
+      document.getElementById('kpi-won').textContent      = fmtUSD(d.closed_won_value);
+      document.getElementById('kpi-winrate').textContent  = d.win_rate + '%';
+      document.getElementById('kpi-cycle').textContent    = d.avg_cycle_days + 'd';
+
+      // Funnel (count)
+      const maxCount = Math.max(...d.counts);
+      const funnelHtml = d.stages.map((s, i) => {
+        const pct = Math.round((d.counts[i] / maxCount) * 100);
+        return `<div class="funnel-row">
+          <div class="funnel-label">${s}</div>
+          <div class="funnel-bar-wrap">
+            <div class="funnel-bar" style="width:${pct}%;background:${d.colors[i]}">${d.counts[i]} deals</div>
+          </div>
+          <div class="funnel-count">${d.counts[i]}</div>
+        </div>`;
+      }).join('');
+      document.getElementById('funnel-rows').innerHTML = funnelHtml;
+
+      // Revenue chart
+      const maxRev = Math.max(...d.revenue);
+      const chartHtml = d.months.map((m, i) => {
+        const h = Math.max(Math.round((d.revenue[i] / maxRev) * 120), 4);
+        const isLast = i === d.months.length - 1;
+        return `<div class="bar-col">
+          <div class="bar-col-val">${fmtUSD(d.revenue[i])}</div>
+          <div class="bar-col-bar" style="height:${h}px;background:${isLast ? '#22c55e' : '#3b82f6'}"></div>
+          <div class="bar-col-label">${m.slice(5)}</div>
+        </div>`;
+      }).join('');
+      document.getElementById('rev-chart').innerHTML = chartHtml;
+
+      // Value bars by stage
+      const maxVal = Math.max(...d.values);
+      const valueBarsHtml = d.stages.map((s, i) => {
+        const pct = Math.round((d.values[i] / maxVal) * 100);
+        return `<div class="funnel-row">
+          <div class="funnel-label">${s}</div>
+          <div class="funnel-bar-wrap">
+            <div class="funnel-bar" style="width:${pct}%;background:${d.colors[i]}">${fmtUSD(d.values[i])}</div>
+          </div>
+        </div>`;
+      }).join('');
+      document.getElementById('value-bars').innerHTML = valueBarsHtml;
+
+      // Donut
+      const wonPct  = d.win_rate;
+      const lostPct = Math.round((d.counts[5] / Math.max(d.counts[0], 1)) * 100);
+      drawDonut(wonPct, lostPct);
+
+      // Deals table
+      const tbody = document.getElementById('deals-body');
+      tbody.innerHTML = d.deals.map(deal => {
+        const probColor = deal.prob >= 75 ? '#22c55e' : deal.prob >= 50 ? '#f59e0b' : '#3b82f6';
+        return `<tr>
+          <td class="mono" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${deal.name}</td>
+          <td>${deal.rep}</td>
+          <td>${stageChip(deal.stage)}</td>
+          <td class="mono">${fmtUSD(deal.value)}</td>
+          <td class="mono">${deal.days}d</td>
+          <td>
+            <div class="prob-wrap">
+              <div class="prob-bar-bg"><div class="prob-bar-fill" style="width:${deal.prob}%;background:${probColor}"></div></div>
+              <div class="prob-pct">${deal.prob}%</div>
+            </div>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    // ── fetch ───────────────────────────────────────────────────────
+    async function load() {
+      document.getElementById('ts').textContent = 'Refreshing…';
+      try {
+        const r = await fetch('/api/sales');
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const d = await r.json();
+        render(d);
+      } catch (e) {
+        document.getElementById('ts').textContent = 'Error: ' + e.message;
+      }
+    }
+
+    load();
+    setInterval(load, 30000);
+  </script>
+</body>
+</html>

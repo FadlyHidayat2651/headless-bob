@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Server Dashboard</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      border-bottom: 1px solid #2d3748;
+      padding-bottom: 1.25rem;
+    }
+
+    header h1 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #f0f4ff;
+    }
+
+    .badge {
+      background: #22c55e22;
+      color: #22c55e;
+      border: 1px solid #22c55e55;
+      border-radius: 9999px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 0.2rem 0.6rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .timestamp {
+      margin-left: auto;
+      font-size: 0.8rem;
+      color: #718096;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+
+    .card {
+      background: #1a1d2e;
+      border: 1px solid #2d3748;
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      transition: border-color 0.2s;
+    }
+
+    .card:hover { border-color: #4a5568; }
+
+    .card-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #718096;
+      font-weight: 600;
+    }
+
+    .card-value {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: #f0f4ff;
+      line-height: 1.1;
+    }
+
+    .card-sub {
+      font-size: 0.8rem;
+      color: #718096;
+    }
+
+    .card-icon {
+      font-size: 1.5rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .bar-wrap {
+      height: 6px;
+      background: #2d3748;
+      border-radius: 9999px;
+      overflow: hidden;
+      margin-top: 0.5rem;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 9999px;
+      transition: width 0.8s ease;
+    }
+
+    .bar-green  { background: linear-gradient(90deg, #22c55e, #4ade80); }
+    .bar-blue   { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+    .bar-purple { background: linear-gradient(90deg, #a855f7, #c084fc); }
+    .bar-orange { background: linear-gradient(90deg, #f97316, #fb923c); }
+
+    section.full-card {
+      background: #1a1d2e;
+      border: 1px solid #2d3748;
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+
+    section.full-card h2 {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #718096;
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+
+    th {
+      text-align: left;
+      color: #718096;
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 0.4rem 0.75rem;
+      border-bottom: 1px solid #2d3748;
+    }
+
+    td {
+      padding: 0.55rem 0.75rem;
+      border-bottom: 1px solid #1e2231;
+      color: #e2e8f0;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #20243a; }
+
+    .mono { font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 0.82rem; }
+
+    #refresh-btn {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 0.45rem 1rem;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-left: 0.75rem;
+    }
+    #refresh-btn:hover { background: #2563eb; }
+
+    .spinner { display: none; }
+    .loading .spinner { display: inline; }
+  </style>
+</head>
+<body>
+  <header>
+    <span style="font-size:1.6rem">🖥️</span>
+    <h1>Server Dashboard</h1>
+    <span class="badge">● Live</span>
+    <span class="timestamp" id="ts">—</span>
+    <button id="refresh-btn" onclick="refresh()">↻ Refresh</button>
+  </header>
+
+  <!-- Stat cards -->
+  <div class="grid">
+    <div class="card">
+      <div class="card-icon">⚡</div>
+      <div class="card-label">CPU Usage</div>
+      <div class="card-value" id="cpu-val">—</div>
+      <div class="card-sub" id="cpu-cores">—</div>
+      <div class="bar-wrap"><div class="bar-fill bar-blue" id="cpu-bar" style="width:0%"></div></div>
+    </div>
+    <div class="card">
+      <div class="card-icon">🧠</div>
+      <div class="card-label">Memory</div>
+      <div class="card-value" id="mem-val">—</div>
+      <div class="card-sub" id="mem-sub">—</div>
+      <div class="bar-wrap"><div class="bar-fill bar-purple" id="mem-bar" style="width:0%"></div></div>
+    </div>
+    <div class="card">
+      <div class="card-icon">💾</div>
+      <div class="card-label">Disk ( / )</div>
+      <div class="card-value" id="disk-val">—</div>
+      <div class="card-sub" id="disk-sub">—</div>
+      <div class="bar-wrap"><div class="bar-fill bar-orange" id="disk-bar" style="width:0%"></div></div>
+    </div>
+    <div class="card">
+      <div class="card-icon">⏱️</div>
+      <div class="card-label">Uptime</div>
+      <div class="card-value" id="uptime-val">—</div>
+      <div class="card-sub" id="uptime-sub">—</div>
+    </div>
+    <div class="card">
+      <div class="card-icon">🔥</div>
+      <div class="card-label">Load Average</div>
+      <div class="card-value" id="load1">—</div>
+      <div class="card-sub" id="load-sub">—</div>
+      <div class="bar-wrap"><div class="bar-fill bar-green" id="load-bar" style="width:0%"></div></div>
+    </div>
+    <div class="card">
+      <div class="card-icon">🌐</div>
+      <div class="card-label">Hostname</div>
+      <div class="card-value" style="font-size:1rem;word-break:break-all" id="hostname-val">—</div>
+      <div class="card-sub" id="os-val">—</div>
+    </div>
+  </div>
+
+  <!-- Process table -->
+  <section class="full-card">
+    <h2>Top Processes (by CPU)</h2>
+    <table id="proc-table">
+      <thead>
+        <tr>
+          <th>PID</th><th>User</th><th>CPU %</th><th>MEM %</th><th>Command</th>
+        </tr>
+      </thead>
+      <tbody id="proc-body">
+        <tr><td colspan="5" style="color:#718096;text-align:center;padding:1rem">Loading…</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- Network table -->
+  <section class="full-card">
+    <h2>Network Interfaces</h2>
+    <table id="net-table">
+      <thead>
+        <tr><th>Interface</th><th>RX</th><th>TX</th><th>State</th></tr>
+      </thead>
+      <tbody id="net-body">
+        <tr><td colspan="4" style="color:#718096;text-align:center;padding:1rem">Loading…</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <script>
+    const API = '/api/stats';
+
+    function fmt(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1048576) return (bytes/1024).toFixed(1) + ' KB';
+      if (bytes < 1073741824) return (bytes/1048576).toFixed(1) + ' MB';
+      return (bytes/1073741824).toFixed(2) + ' GB';
+    }
+
+    async function refresh() {
+      document.getElementById('ts').textContent = 'Refreshing…';
+      try {
+        const r = await fetch(API);
+        if (!r.ok) throw new Error(r.status);
+        const d = await r.json();
+        apply(d);
+      } catch(e) {
+        document.getElementById('ts').textContent = 'Error: ' + e.message;
+      }
+    }
+
+    function apply(d) {
+      document.getElementById('ts').textContent = 'Updated ' + new Date().toLocaleTimeString();
+
+      // CPU
+      const cpuPct = d.cpu_percent ?? 0;
+      document.getElementById('cpu-val').textContent = cpuPct.toFixed(1) + '%';
+      document.getElementById('cpu-cores').textContent = (d.cpu_model || '') + (d.cpu_count ? ` · ${d.cpu_count} cores` : '');
+      document.getElementById('cpu-bar').style.width = Math.min(cpuPct, 100) + '%';
+
+      // Memory
+      const memPct = d.mem_percent ?? 0;
+      document.getElementById('mem-val').textContent = memPct.toFixed(1) + '%';
+      document.getElementById('mem-sub').textContent = fmt(d.mem_used||0) + ' / ' + fmt(d.mem_total||0);
+      document.getElementById('mem-bar').style.width = Math.min(memPct, 100) + '%';
+
+      // Disk
+      const diskPct = d.disk_percent ?? 0;
+      document.getElementById('disk-val').textContent = diskPct.toFixed(1) + '%';
+      document.getElementById('disk-sub').textContent = fmt(d.disk_used||0) + ' / ' + fmt(d.disk_total||0);
+      document.getElementById('disk-bar').style.width = Math.min(diskPct, 100) + '%';
+
+      // Uptime
+      const up = d.uptime_seconds || 0;
+      const days = Math.floor(up / 86400);
+      const hrs  = Math.floor((up % 86400) / 3600);
+      const mins = Math.floor((up % 3600) / 60);
+      document.getElementById('uptime-val').textContent = days > 0 ? `${days}d ${hrs}h` : `${hrs}h ${mins}m`;
+      document.getElementById('uptime-sub').textContent = `${days}d ${hrs}h ${mins}m total`;
+
+      // Load
+      const la = d.load_avg || [0,0,0];
+      document.getElementById('load1').textContent = la[0].toFixed(2);
+      document.getElementById('load-sub').textContent = `5m: ${la[1].toFixed(2)}  ·  15m: ${la[2].toFixed(2)}`;
+      const loadPct = Math.min((la[0] / (d.cpu_count||1)) * 100, 100);
+      document.getElementById('load-bar').style.width = loadPct + '%';
+
+      // Hostname
+      document.getElementById('hostname-val').textContent = d.hostname || '—';
+      document.getElementById('os-val').textContent = d.os || '—';
+
+      // Processes
+      const pb = document.getElementById('proc-body');
+      pb.innerHTML = '';
+      (d.processes || []).forEach(p => {
+        pb.innerHTML += `<tr>
+          <td class="mono">${p.pid}</td>
+          <td>${p.user}</td>
+          <td class="mono">${p.cpu.toFixed(1)}%</td>
+          <td class="mono">${p.mem.toFixed(1)}%</td>
+          <td class="mono" style="color:#94a3b8;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.cmd}</td>
+        </tr>`;
+      });
+
+      // Network
+      const nb = document.getElementById('net-body');
+      nb.innerHTML = '';
+      (d.net || []).forEach(n => {
+        nb.innerHTML += `<tr>
+          <td class="mono">${n.iface}</td>
+          <td class="mono">${fmt(n.rx)}</td>
+          <td class="mono">${fmt(n.tx)}</td>
+          <td><span style="color:${n.up ? '#22c55e' : '#ef4444'}">${n.up ? '● UP' : '○ DOWN'}</span></td>
+        </tr>`;
+      });
+    }
+
+    // Auto-refresh every 5 seconds
+    refresh();
+    setInterval(refresh, 5000);
+  </script>
+</body>
+</html>

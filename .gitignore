@@ -8,3 +8,5 @@ Typescript_bob/
 
 # Patch scripts (temp)
 vm-source/patch*.py
+__pycache__/
+*.pyc

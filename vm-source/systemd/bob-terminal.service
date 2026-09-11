@@ -1,0 +1,18 @@
+[Unit]
+Description=Bob Terminal - Bloomberg-style Dashboard
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=itzuser
+WorkingDirectory=/data/bob-terminal
+Environment="BOB_API_KEY=bob_prod_bob-apikey_5Ap754RkPFcTQeVFxsmoYTp4C8ZjtyW3tru8yTUE4KGe6zsnVe5ZhTpowAxrsnLjz6psvKogXn5ZzwkejVgeshDt_Fi2Fxt58GvA9yj86fsSJ6VzoZc8HmEpaBbttUQPx6uSB"
+Environment="HOME=/home/itzuser"
+Environment="PATH=/usr/local/bin:/usr/bin:/bin"
+ExecStart=/usr/bin/node /data/bob-terminal/server.js
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

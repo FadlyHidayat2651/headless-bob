@@ -1,0 +1,77 @@
+{
+  "mcpServers": {
+    "obsidian-vault": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/data/vault"
+      ],
+      "metadata": {
+        "description": "Filesystem MCP for the Obsidian vault at /data/vault \u2014 read, write, list, search notes and bob-config files"
+      },
+      "disabled": false
+    },
+    "firecrawl-mcp": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "firecrawl-mcp"
+      ],
+      "env": {
+        "FIRECRAWL_API_KEY": "fc-3ae41760a95d41408420edfef13a68de"
+      },
+      "alwaysAllow": [
+        "firecrawl_scrape"
+      ],
+      "metadata": {
+        "description": "Firecrawl MCP server for web scraping capabilities",
+        "version": "latest"
+      },
+      "disabled": false
+    },
+    "postgres": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@crystaldba/postgres-mcp",
+        "--access-mode=unrestricted"
+      ],
+      "env": {
+        "DATABASE_URL": "postgresql://dbmanager:dbmanager_pass@localhost:5432/devdb"
+      },
+      "metadata": {
+        "description": "Postgres MCP Pro - query, inspect schema, analyze performance on local PostgreSQL 16"
+      },
+      "disabled": false
+    },
+    "mongodb": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mongodb-mcp-server@latest"
+      ],
+      "env": {
+        "MDB_MCP_CONNECTION_STRING": "mongodb://localhost:27017"
+      },
+      "metadata": {
+        "description": "Official MongoDB MCP server - CRUD, aggregation, schema inspection on local MongoDB 8"
+      },
+      "disabled": false
+    },
+    "redis": {
+      "command": "/home/itzuser/.local/bin/uvx",
+      "args": [
+        "--from",
+        "redis-mcp-server@latest",
+        "redis-mcp-server",
+        "--url",
+        "redis://localhost:6379/0"
+      ],
+      "metadata": {
+        "description": "Official Redis MCP server - read/write/query Valkey (Redis-compatible) on localhost:6379"
+      },
+      "disabled": false
+    }
+  }
+}

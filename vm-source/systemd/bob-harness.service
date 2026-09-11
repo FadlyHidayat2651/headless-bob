@@ -1,0 +1,19 @@
+[Unit]
+Description=Bob Harness - FastAPI REST wrapper for IBM Bob
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=itzuser
+WorkingDirectory=/data/bob-harness/api
+EnvironmentFile=/data/bob-harness/.env
+Environment="HOME=/home/itzuser"
+Environment="PATH=/home/itzuser/.local/bin:/usr/local/bin:/usr/bin:/bin"
+Environment="BOBSHELL_API_KEY=bob_prod_bob-apikey_5Ap754RkPFcTQeVFxsmoYTp4C8ZjtyW3tru8yTUE4KGe6zsnVe5ZhTpowAxrsnLjz6psvKogXn5ZzwkejVgeshDt_Fi2Fxt58GvA9yj86fsSJ6VzoZc8HmEpaBbttUQPx6uSB"
+ExecStart=/usr/bin/python3 -m uvicorn server:app --host 0.0.0.0 --port 44285
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

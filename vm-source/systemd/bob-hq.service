@@ -1,0 +1,14 @@
+[Unit]
+Description=Bob Company HQ Dashboard
+After=network.target bob-harness.service
+
+[Service]
+Type=simple
+User=itzuser
+WorkingDirectory=/data/company-hq
+ExecStart=/usr/bin/python3 app.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
